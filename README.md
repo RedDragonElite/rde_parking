@@ -11,13 +11,13 @@
 **The most immersive, production-grade parking & car lock system ever built for FiveM.**  
 Statebag-synced. ox_target powered. Zero stuck UI. Nostr-logged. Zero compromises.
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2f80d0b2-e96d-4d50-a8cc-660bf980c109" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/573712e2-c1b3-4bdc-aaad-53d371321946" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/32aaa718-048f-475d-a866-99e1051c95da" />
+![screenshot1](https://private-user-images.githubusercontent.com/57282916/555194010-2f80d0b2-e96d-4d50-a8cc-660bf980c109.png)
+![screenshot2](https://private-user-images.githubusercontent.com/57282916/555193808-573712e2-c1b3-4bdc-aaad-53d371321946.png)
+![screenshot3](https://private-user-images.githubusercontent.com/57282916/555249862-32aaa718-048f-475d-a866-99e1051c95da.png)
 
 *Built by [Red Dragon Elite](https://rd-elite.com) | Free Forever | OX Ecosystem Exclusive*
 
-[📖 Installation](#-installation) • [🎮 Features](#-features) • [⚙️ Configuration](#️-configuration) • [📡 Nostr Logging](#-nostr-logging) • [💬 Discord](https://discord.gg/rde)
+[📖 Installation](#-installation) • [🎮 Features](#-features) • [⚙️ Configuration](#%EF%B8%8F-configuration) • [📡 Nostr Logging](#-nostr-logging) • [💬 Discord](https://discord.gg/rde)
 
 ---
 
@@ -29,14 +29,16 @@ Every other parking script is either a bloated mess with stuck TextUI, broken an
 This is what production-grade looks like.
 
 | ❌ Other Scripts | ✅ RDE Parking System |
-|---|---|
+| --- | --- |
 | **Stuck "[E] Lock" label** on screen forever | **ox_target** — labels show/hide automatically, zero stuck UI |
-| **Broken animations** — wrong dicts, wrong context | **Clean progress circle** — no TaskPlayAnim nonsense |
+| **No animations** — nothing happens visually | **Key-fob + phone animations** — real feedback on every action |
 | **Key conflicts** — [E] does five things at once | **ox_target interactions** — context-aware, no conflicts |
 | **No statebag sync** — only the spawner sees it | **Statebag-first** — server-authoritative, synced to all |
 | **Discord logging** — rate limited, censored, deletable | **Nostr logging** — decentralized, permanent, optional |
 | **English only** | **EN / DE** built-in, easily extendable |
 | **`RegisterCommand` with manual ACE checks** | **`lib.addCommand`** with `group.admin` — RDE standard |
+| **Wrong lock label when already locked** | **Two separate targets** — correct icon & label always |
+| **Vehicle disappears after parking** | **Vehicle stays in world** — locked in place, saved to DB |
 
 ---
 
@@ -44,17 +46,32 @@ This is what production-grade looks like.
 
 ### 🎮 Gameplay
 - **Park your vehicle** anywhere via ox_target — engine must be off, vehicle must be yours
-- **Retrieve your vehicle** from where you left it — persistent across restarts
-- **Lock & unlock** via ox_target — light flash + sound effects, synced to all players
-- **Auto-spawn on login** — your parked vehicles reappear where you left them
+- **Vehicle stays in the world** — parked in place, locked, persistent across restarts
+- **Auto-retrieve on engine start** — get in your parked car, start the engine → automatically retrieved from DB, no manual step
+- **Retrieve manually** via ox_target — removes DB entry, unlocks vehicle
+- **Lock & unlock** via ox_target — separate entries with correct icons, double-beep + indicator flash, synced to all players
+- **Auto-spawn on login** — your parked vehicles reappear exactly where you left them
 - **Blacklist** — boats and trains can't be parked by default (configurable)
+
+### 🎬 Animations
+- **🔑 Lock / Unlock** — key-fob gesture (`mp_common` / `givetake1_b`, upper body only, flag 50) — character raises hand and presses the remote
+- **📱 Park** — phone-check animation (`amb@world_human_stand_mobile`, upper body, flag 49) — character looks at their phone/keys confirming the spot
+- All animations run exactly as long as the progress circle and are cleanly stopped on cancel or completion
+
+### 🔊 Sound & Visual FX
+- **Double-beep horn** on lock (350ms + pause + 200ms, loops every frame — correct GTA native usage)
+- **Single pip** on unlock (150ms)
+- **Hazard indicator flash** (`SetVehicleIndicatorLights`) — proper blinkers, not headlights
+- **Other players** see and hear the effects too (synced via server event)
 
 ### 🏗️ Technical
 - **ox_target powered** — no TextUI polling loops, no stuck labels, no key conflicts
+- **Two separate lock/unlock targets** — `rde_parking_lock` shows when unlocked, `rde_parking_unlock` shows when locked — always correct icon and label
 - **Statebag-first architecture** — `parked`, `locked`, `vehicleId`, `plate`, `owner` all on the entity
 - **ox_core exclusive** — proper `Ox.GetPlayer` validation on every callback and event
 - **ox_lib properties** — `lib.getVehicleProperties` / `lib.setVehicleProperties` for mods, fuel, damage
-- **Progress circle only** — clean UX, no animation dict bugs, cancelable where appropriate
+- **No async in canInteract** — `canInteract` fires every frame; uses instant local caches only, never DB calls
+- **Parked cache** — client-side cache synced on login and updated immediately on park/unpark
 - **Auto-delete scheduler** — removes vehicles older than N days automatically
 - **Nostr logging** — optional, completely silent if `rde_nostr_log` isn't installed
 
@@ -62,18 +79,7 @@ This is what production-grade looks like.
 - **Multi-language** — EN / DE out of the box, add any language in 5 minutes
 - **Fully configurable** — distances, durations, sounds, cooldowns, all in `config.lua`
 - **Admin commands** — `/parkingstats`, `/parkingreload`, `/parkingcleanup`
-- **Ownership cache** — client-side cache updated on login, no repeated DB queries
 - **Debug mode** — detailed console output with timestamps
-
----
-
-## 📸 Screenshots
-
-> *Park via ox_target → clean progress circle → vehicle saved → retrieve anywhere*
-
-| ox_target Interaction | Parking Progress | Vehicle Locked |
-|---|---|---|
-| *coming soon* | *coming soon* | *coming soon* |
 
 ---
 
@@ -81,7 +87,7 @@ This is what production-grade looks like.
 
 **Required:**
 - [ox_core](https://github.com/communityox/ox_core) — Framework
-- [ox_lib](https://github.com/communityox/ox_lib) — UI, progress, vehicle properties
+- [ox_lib](https://github.com/communityox/ox_lib) — UI, progress, vehicle properties, animations
 - [ox_target](https://github.com/communityox/ox_target) — Vehicle interaction system
 - [oxmysql](https://github.com/communityox/oxmysql) — Database connector
 
@@ -141,30 +147,42 @@ No SQL imports. No manual setup. Check your console for the startup banner.
 1. Get in your vehicle (must be registered owner)
 2. Drive to your desired parking spot
 3. Turn engine off  [Config.RequireEngineOff = true]
-4. Look at your vehicle → ox_target → "🅿️ Park Vehicle"
-5. Hold progress circle (3 seconds)
-6. Vehicle is saved to DB with coords, heading, mods, fuel, damage
-7. Entity deleted locally — slot freed
+4. Step outside → ox_target → "🅿️ Park Vehicle"
+5. 📱 Phone-check animation plays while progress circle runs (3 seconds)
+6. Vehicle locked in place — stays in world, saved to DB
+7. Double horn beep + hazard lights flash
 ```
 
-### Retrieval Flow
+### Retrieval Flow — Manual
 
 ```
-1. Walk up to where your vehicle is parked
-   (it was re-spawned when you logged in)
+1. Walk up to your parked vehicle (it re-spawned on login)
 2. Look at it → ox_target → "🚗 Retrieve Vehicle"
 3. Short progress circle (1.5 seconds)
-4. DB entry deleted — vehicle is now active again
+4. Vehicle unlocked, DB entry removed — drive away
+```
+
+### Retrieval Flow — Automatic
+
+```
+1. Get in your parked vehicle
+2. Start the engine
+3. System detects engine start on a parked vehicle → auto-retrieves instantly
+4. No menu, no interaction needed — just get in and drive
 ```
 
 ### Lock / Unlock Flow
 
 ```
 1. Stand next to your vehicle (outside)
-2. Look at it → ox_target → "🔒 Lock" / "🔓 Unlock"
-3. Short progress (0.8 seconds)
-4. Lights flash, sound plays, lock state synced to all players via statebag
-5. Lock state persisted to DB for parked vehicles
+2. Look at it:
+   • Unlocked → ox_target shows "🔒 Lock Vehicle"
+   • Locked   → ox_target shows "🔓 Unlock Vehicle"
+3. 🔑 Key-fob animation plays (0.8 seconds)
+4. Lock:   double horn beep + 2x hazard flash
+   Unlock: single pip + 1x hazard flash
+5. Lock state synced to all nearby players via server event
+6. Lock state persisted to DB for parked vehicles
 ```
 
 ### Why ox_target Instead of [E] / TextUI?
@@ -236,7 +254,7 @@ Then set `Config.Locale = 'fr'`. Done.
 ## 👑 Admin Commands
 
 | Command | Description | Permission |
-|---|---|---|
+| --- | --- | --- |
 | `/parkingstats` | Shows spawned vehicles, DB count, active locks | `group.admin` |
 | `/parkingreload` | Despawns all parked vehicles and re-spawns them fresh | `group.admin` |
 | `/parkingcleanup` | Runs the auto-delete cleanup manually | `group.admin` |
@@ -250,7 +268,7 @@ If [rde_nostr_log](https://github.com/RedDragonElite/rde_nostr_log) is installed
 **Events logged:**
 
 | Event | Message |
-|---|---|
+| --- | --- |
 | Vehicle parked | `🅿️ [PARKING] PlayerName parked ABC1234 at x / y / z` |
 | Vehicle retrieved | `🚗 [PARKING] PlayerName retrieved ABC1234` |
 | Admin /parkingstats | `👑 [PARKING ADMIN] AdminName – parkingstats` |
@@ -303,18 +321,17 @@ local vehicles = lib.callback.await('rde_parking:getOwnedVehicles', false)
 
 ## 🐛 Troubleshooting
 
-### "[E] Fahrzeug sperren" label is stuck on screen
-- This was a bug in older versions caused by TextUI not being hidden reliably.
-- **This is fixed** in the current release — the system now uses ox_target exclusively.
-- Update to the latest version. If it still happens, make sure `ox_target` is in your `server.cfg` and started before `rde_parking`.
+### Park option not showing up
+- Make sure `ox_target` is started **before** `rde_parking` in `server.cfg`.
+- The system uses `GetResourceState('ox_target')` to wait for ox_target — not `exports.ox_target` which is always a non-nil table.
+- Enable `Config.Debug = true` — if you see `ox_target registered ✅` in client console, targets are loaded.
 
-### Park animation looks broken / character acts weird
-- This was caused by `TaskPlayAnim` with an incorrect animation dict.
-- **This is fixed** — parking now uses only `lib.progressCircle`. No animations. No weirdness.
+### Park option shows but clicking does nothing / "engine must be off"
+- Engine check happens in `onSelect` with a notification — the option intentionally shows even when engine is on.
+- Turn the engine off first, then click Park.
 
 ### Vehicle doesn't re-spawn on login
-- Make sure the player's character is fully loaded before the spawn runs.
-- The system waits 5 seconds after `ox:playerLoaded` — if your server is slow to load characters, increase the `SetTimeout(5000, ...)` in `server/main.lua`.
+- The system waits 5 seconds after `ox:playerLoaded` — increase the `SetTimeout(5000, ...)` in `server/main.lua` if your server loads characters slowly.
 - Enable `Config.Debug = true` and check server console for spawn logs.
 
 ### "Not your vehicle" when it clearly is
@@ -322,13 +339,22 @@ local vehicles = lib.callback.await('rde_parking:getOwnedVehicles', false)
 - The cache is sent to the client after `ox:playerLoaded` via `rde_parking:updateOwnershipCache`.
 - If it's empty, check your `vehicles` table has the correct `owner` column matching `charId`.
 
+### Lock label shows wrong text / wrong icon
+- This was a bug in older versions caused by ox_target ignoring the second return value of `canInteract`.
+- **This is fixed** — there are now two separate targets: `rde_parking_lock` (shows when unlocked) and `rde_parking_unlock` (shows when locked).
+
+### No horn / no blinkers when locking
+- `SoundVehicleHornThisFrame` must be called every frame for the duration — calling it once does nothing. This is handled correctly.
+- `SetVehicleIndicatorLights` is used for actual blinkers — not `SetVehicleLights` which controls headlights.
+- If still silent, check that the vehicle entity exists and you are close enough.
+
 ### Lock not syncing to other players
-- Lock sync requires the vehicle to have a network ID (`NetworkGetNetworkIdFromEntity`).
-- Make sure the vehicle is networked (it should be if spawned by the server).
+- Lock sync requires the vehicle to have a valid network ID (`NetworkGetNetworkIdFromEntity`).
+- Make sure the vehicle is networked (it will be if spawned by the server on login).
 
 ### Database error on start
 - Make sure `oxmysql` is started before `rde_parking` in `server.cfg`.
-- The script waits for oxmysql to be in `started` state before running any queries.
+- The script waits for oxmysql to reach `started` state before running any queries.
 
 ---
 
@@ -419,7 +445,7 @@ This project is licensed under the **RDE Black Flag License**.
 
 ### Built With
 - [ox_core](https://github.com/communityox/ox_core) — The only framework worth building on
-- [ox_lib](https://github.com/communityox/ox_lib) — UI, progress bars, vehicle properties
+- [ox_lib](https://github.com/communityox/ox_lib) — UI, progress bars, vehicle properties, animations
 - [ox_target](https://github.com/communityox/ox_target) — Entity interaction system
 - [oxmysql](https://github.com/communityox/oxmysql) — Database connector
 - [rde_nostr_log](https://github.com/RedDragonElite/rde_nostr_log) — Decentralized logging
@@ -437,6 +463,6 @@ This project is licensed under the **RDE Black Flag License**.
 
 *Part of the [RDE Arsenal](https://github.com/RedDragonElite) — 55+ next-gen FiveM resources, all FREE.*
 
-[⬆ Back to Top](#️-rde-parking-system)
+[⬆ Back to Top](#%EF%B8%8F-rde-parking-system)
 
 </div>
