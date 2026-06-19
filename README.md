@@ -1,408 +1,286 @@
-<div align="center">
+# 🅿️ rde_parking
 
-# 🅿️ RDE Parking System
+🔥 PROXIMITY-LOADED PARKING & LOCK SYSTEM V1.1.0 — Built on ox_core & Statebags! 🅿️
 
-[![Version](https://img.shields.io/badge/version-1.0.0-red?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
-[![License](https://img.shields.io/badge/license-RDE%20Black%20Flag-black?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.1.0-red?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
+[![License](https://img.shields.io/badge/license-RDE%20Black%20Flag%20v6.66-black?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking/blob/main/LICENSE)
 [![FiveM](https://img.shields.io/badge/FiveM-Compatible-blue?style=for-the-badge)](https://fivem.net)
-[![ox_core](https://img.shields.io/badge/ox__core-Exclusive-purple?style=for-the-badge)](https://github.com/communityox/ox_core)
-[![FREE](https://img.shields.io/badge/price-FREE%20FOREVER-green?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
+[![ox_core](https://img.shields.io/badge/Framework-ox__core-blue?style=for-the-badge)](https://github.com/overextended/ox_core)
+[![Nostr](https://img.shields.io/badge/Nostr-Decentralized-purple?style=for-the-badge)](https://github.com/RedDragonElite/rde_nostr_log)
+[![Price](https://img.shields.io/badge/price-FREE%20FOREVER-brightgreen?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
 
-**The most immersive, production-grade parking & car lock system ever built for FiveM.**  
-Statebag-synced. ox_target powered. Zero stuck UI. Nostr-logged. Zero compromises.
+**Proximity-streamed vehicle parking, statebag-synced locking, full property persistence, and zero-entity-bloat performance — all in one resource.**
 
-![screenshot1](https://private-user-images.githubusercontent.com/57282916/555194010-2f80d0b2-e96d-4d50-a8cc-660bf980c109.png)
-![screenshot2](https://private-user-images.githubusercontent.com/57282916/555193808-573712e2-c1b3-4bdc-aaad-53d371321946.png)
-![screenshot3](https://private-user-images.githubusercontent.com/57282916/555249862-32aaa718-048f-475d-a866-99e1051c95da.png)
+Built on ox_core · ox_lib · ox_target · oxmysql
 
-*Built by [Red Dragon Elite](https://rd-elite.com) | Free Forever | OX Ecosystem Exclusive*
+Built by Red Dragon Elite | SerpentsByte
 
-[📖 Installation](#-installation) • [🎮 Features](#-features) • [⚙️ Configuration](#%EF%B8%8F-configuration) • [📡 Nostr Logging](#-nostr-logging) • [💬 Discord](https://discord.gg/rde)
+📖 Table of Contents
+Overview
+Why RDE Parking?
+Features
+Dependencies
+Installation
+Configuration
+Usage & Controls
+Architecture
+Developer API
+Security
+Commands
+Database
+Performance
+Troubleshooting
+Changelog
+License
+🎯 Overview
+RDE Parking is a production-grade parking and vehicle-lock system for FiveM servers. Server-side proximity streaming, full statebag synchronization for both lock state and vehicle mods, ox_target interaction, persistent MySQL storage, server-validated ownership on every action, and optional decentralized Nostr logging — free forever.
 
----
+v1.1.0 is a full RDE OX Standards v2 overhaul: parked vehicles are no longer all spawned at server boot. They stream in only when a player is actually nearby, and despawn again once nobody is — without ever touching the database row. Two real security/sync bugs from the original release were also found and fixed during the audit (see Security).
 
-</div>
-
-## 🔥 Why This System Changes Everything
-
-Every other parking script is either a bloated mess with stuck TextUI, broken animations, or Discord-only logging that gets rate-limited and deleted.  
-This is what production-grade looks like.
-
-| ❌ Other Scripts | ✅ RDE Parking System |
-| --- | --- |
-| **Stuck "[E] Lock" label** on screen forever | **ox_target** — labels show/hide automatically, zero stuck UI |
-| **No animations** — nothing happens visually | **Key-fob + phone animations** — real feedback on every action |
-| **Key conflicts** — [E] does five things at once | **ox_target interactions** — context-aware, no conflicts |
-| **No statebag sync** — only the spawner sees it | **Statebag-first** — server-authoritative, synced to all |
-| **Discord logging** — rate limited, censored, deletable | **Nostr logging** — decentralized, permanent, optional |
-| **English only** | **EN / DE** built-in, easily extendable |
-| **`RegisterCommand` with manual ACE checks** | **`lib.addCommand`** with `group.admin` — RDE standard |
-| **Wrong lock label when already locked** | **Two separate targets** — correct icon & label always |
-| **Vehicle disappears after parking** | **Vehicle stays in world** — locked in place, saved to DB |
-
----
-
-## 🎯 Features
-
-### 🎮 Gameplay
-- **Park your vehicle** anywhere via ox_target — engine must be off, vehicle must be yours
-- **Vehicle stays in the world** — parked in place, locked, persistent across restarts
-- **Auto-retrieve on engine start** — get in your parked car, start the engine → automatically retrieved from DB, no manual step
-- **Retrieve manually** via ox_target — removes DB entry, unlocks vehicle
-- **Lock & unlock** via ox_target — separate entries with correct icons, double-beep + indicator flash, synced to all players
-- **Auto-spawn on login** — your parked vehicles reappear exactly where you left them
-- **Blacklist** — boats and trains can't be parked by default (configurable)
-
-### 🎬 Animations
-- **🔑 Lock / Unlock** — key-fob gesture (`mp_common` / `givetake1_b`, upper body only, flag 50) — character raises hand and presses the remote
-- **📱 Park** — phone-check animation (`amb@world_human_stand_mobile`, upper body, flag 49) — character looks at their phone/keys confirming the spot
-- All animations run exactly as long as the progress circle and are cleanly stopped on cancel or completion
-
-### 🔊 Sound & Visual FX
-- **Double-beep horn** on lock (350ms + pause + 200ms, loops every frame — correct GTA native usage)
-- **Single pip** on unlock (150ms)
-- **Hazard indicator flash** (`SetVehicleIndicatorLights`) — proper blinkers, not headlights
-- **Other players** see and hear the effects too (synced via server event)
-
-### 🏗️ Technical
-- **ox_target powered** — no TextUI polling loops, no stuck labels, no key conflicts
-- **Two separate lock/unlock targets** — `rde_parking_lock` shows when unlocked, `rde_parking_unlock` shows when locked — always correct icon and label
-- **Statebag-first architecture** — `parked`, `locked`, `vehicleId`, `plate`, `owner` all on the entity
-- **ox_core exclusive** — proper `Ox.GetPlayer` validation on every callback and event
-- **ox_lib properties** — `lib.getVehicleProperties` / `lib.setVehicleProperties` for mods, fuel, damage
-- **No async in canInteract** — `canInteract` fires every frame; uses instant local caches only, never DB calls
-- **Parked cache** — client-side cache synced on login and updated immediately on park/unpark
-- **Auto-delete scheduler** — removes vehicles older than N days automatically
-- **Nostr logging** — optional, completely silent if `rde_nostr_log` isn't installed
-
-### 🌐 Quality of Life
-- **Multi-language** — EN / DE out of the box, add any language in 5 minutes
-- **Fully configurable** — distances, durations, sounds, cooldowns, all in `config.lua`
-- **Admin commands** — `/parkingstats`, `/parkingreload`, `/parkingcleanup`
-- **Debug mode** — detailed console output with timestamps
-
----
-
-## 📦 Dependencies
-
-**Required:**
-- [ox_core](https://github.com/communityox/ox_core) — Framework
-- [ox_lib](https://github.com/communityox/ox_lib) — UI, progress, vehicle properties, animations
-- [ox_target](https://github.com/communityox/ox_target) — Vehicle interaction system
-- [oxmysql](https://github.com/communityox/oxmysql) — Database connector
-
-**Optional:**
-- [rde_nostr_log](https://github.com/RedDragonElite/rde_nostr_log) — Decentralized logging *(100% optional — completely silent if not installed)*
-
----
-
-## 🚀 Installation
-
-### 1. Download
-
-```bash
+🔥 Why RDE Parking?
+Other Parking Scripts	✅ RDE Parking
+Every parked car spawns at boot, forever	Proximity-streamed — spawns only near players, despawns when empty
+Client trusts its own plate/netId for locking	Server-side owner verification on every lock/unlock
+Vehicle mods only visible to whoever parked it	Statebag + broadcast sync — every nearby player sees correct mods
+Polling loops checking distance every frame	Throttled server sweep (default 5s), statebag-driven client reactions
+Single TriggerClientEvent spaghetti	One sync path per state change — UpdateStatebag-style, no double broadcast
+ESX / QBCore bloat	ox_core only — the future, not the past
+Discord webhooks for logs (deletable, bannable)	Optional decentralized Nostr logging — permanent & uncensorable
+Paid or locked down	100% free forever — RDE Black Flag
+✨ Features
+🅿️ Parking & Retrieval
+ox_target driven — park, retrieve, lock and unlock all through context interaction, no keybind hell
+Engine-off requirement and minimum body-health threshold before a vehicle can be parked (both configurable)
+Full property capture on park via lib.getVehicleProperties() — mods, paint, livery, damage, fuel, everything
+Auto-retrieve on engine start — get back in a parked vehicle and start the engine, it unparks itself automatically
+Vehicle-class blacklist (boats, trains, etc. excluded from parking by default)
+📡 Proximity Loading (RDE OX Standards v2)
+Parked vehicles are NOT all spawned at once — a throttled server thread (RunProximitySweep, default every 5s) spawns a vehicle only once a player comes within Config.SpawnDistance
+Despawns again after a grace period once nobody has been nearby — the database row is untouched, the vehicle simply respawns the moment someone gets close again
+Despawn radius uses a hysteresis multiplier over the spawn radius to avoid pop-in/pop-out flicker at the boundary
+A lightweight in-memory index (coords/plate/locked only — no props) drives the sweep; full vehicle properties are only pulled from the database the instant a vehicle actually spawns
+🔄 Statebag Sync
+Lock state and vehicle properties both sync through prefixed entity statebags (rde_parking_*) — single source of truth, no parallel TriggerClientEvent for the same data
+Late joiners and players streaming a vehicle in from far away still receive correct mods/paint/lock state automatically via the statebag, not just whoever was online at spawn time
+GlobalState.rde_parking_active and GlobalState.rde_parking_spawned_count expose a lightweight public view (plate/coords/locked only) for other resources — HUD, minimap, admin tools — with zero callback roundtrip
+🛡️ Security
+Server-side ownership verification on every park, lock, and unlock action against the vehicles table — never trusts the client's plate or netId blindly
+Per-player parking lock to prevent concurrent park-spam from the same source
+Server- and client-side lock/unlock cooldown
+🐉 Optional Nostr Logging
+Park and retrieve events logged to rde_nostr_log if present — decentralized, uncensorable, zero config required if the resource isn't installed
+🌍 Multilanguage
+Full English & German out of the box via Config.Locales — add a language by copying one block
+📦 Dependencies
+Resource	Required	Notes
+oxmysql	✅ Required	Database layer
+ox_core	✅ Required	Player/character framework, vehicle ownership
+ox_lib	✅ Required	Progress bars, notifications, callbacks, vehicle property get/set
+ox_target	✅ Required	All park/retrieve/lock/unlock interactions
+rde_nostr_log	⭕ Optional	Decentralized event logging — runs fine without it
+🚀 Installation
+1. Clone the repository
 cd resources
 git clone https://github.com/RedDragonElite/rde_parking.git
-```
-
-Or download the latest [release](https://github.com/RedDragonElite/rde_parking/releases/latest) and extract to your resources folder.
-
-### 2. Add to server.cfg
-
-Dependency order matters — follow this exactly:
-
-```cfg
+2. Add to server.cfg
 ensure oxmysql
 ensure ox_lib
 ensure ox_core
 ensure ox_target
-ensure ox_inventory
-ensure rde_nostr_log   # optional
 ensure rde_parking
-```
 
-### 3. Configure
+# Optional, install before rde_parking if you want decentralized logging
+ensure rde_nostr_log
+Order matters. rde_parking must start after all its dependencies.
 
-Edit `config.lua` to your liking:
+3. Database
+The rde_parked_vehicles table is created automatically on first start. No manual SQL import needed.
 
-```lua
-Config.Locale           = 'de'    -- 'en' or 'de'
-Config.RequireEngineOff = true    -- engine must be off before parking
-Config.AutoDeleteAfterDays = 7    -- remove vehicles older than 7 days (0 = off)
-Config.Debug            = false   -- set true during setup
-```
+4. Configure (Optional)
+Edit config.lua to adjust distances, cooldowns, proximity sweep behavior, and language.
 
-### 4. Done ✅
+5. Restart
+restart rde_parking
+Test by parking a vehicle with /parkingstats open in another window to watch the counters move.
 
-The script auto-creates the database table `rde_parked_vehicles` on first start.  
-No SQL imports. No manual setup. Check your console for the startup banner.
+⚙️ Configuration
+Core
+Config.Locale = 'en'                  -- 'en' or 'de'
+Config.Debug  = false                 -- verbose console output, set false for live servers
 
----
-
-## 🎮 How It Works
-
-### Parking Flow
-
-```
-1. Get in your vehicle (must be registered owner)
-2. Drive to your desired parking spot
-3. Turn engine off  [Config.RequireEngineOff = true]
-4. Step outside → ox_target → "🅿️ Park Vehicle"
-5. 📱 Phone-check animation plays while progress circle runs (3 seconds)
-6. Vehicle locked in place — stays in world, saved to DB
-7. Double horn beep + hazard lights flash
-```
-
-### Retrieval Flow — Manual
-
-```
-1. Walk up to your parked vehicle (it re-spawned on login)
-2. Look at it → ox_target → "🚗 Retrieve Vehicle"
-3. Short progress circle (1.5 seconds)
-4. Vehicle unlocked, DB entry removed — drive away
-```
-
-### Retrieval Flow — Automatic
-
-```
-1. Get in your parked vehicle
-2. Start the engine
-3. System detects engine start on a parked vehicle → auto-retrieves instantly
-4. No menu, no interaction needed — just get in and drive
-```
-
-### Lock / Unlock Flow
-
-```
-1. Stand next to your vehicle (outside)
-2. Look at it:
-   • Unlocked → ox_target shows "🔒 Lock Vehicle"
-   • Locked   → ox_target shows "🔓 Unlock Vehicle"
-3. 🔑 Key-fob animation plays (0.8 seconds)
-4. Lock:   double horn beep + 2x hazard flash
-   Unlock: single pip + 1x hazard flash
-5. Lock state synced to all nearby players via server event
-6. Lock state persisted to DB for parked vehicles
-```
-
-### Why ox_target Instead of [E] / TextUI?
-
-The old approach — polling distance in a thread, showing TextUI, hiding it on walk-away — has a fundamental flaw: `hideTextUI()` is only called if the thread reaches that branch cleanly. Any yield, any race condition, and the label stays on screen forever.
-
-ox_target handles show/hide internally. It's always correct. No stuck UI possible.
-
----
-
-## ⚙️ Configuration
-
-### `config.lua` — Full Reference
-
-```lua
--- Language: 'en' | 'de' (add your own in Config.Locales)
-Config.Locale = 'de'
-
--- Auto-delete old parked vehicles
 Config.AutoDeleteParkedVehicles = true
-Config.AutoDeleteAfterDays      = 7     -- 0 = disabled
+Config.AutoDeleteAfterDays      = 7   -- 0 = disabled
+Distances (metres)
+Config.ParkDistance  = 5.0     -- max distance to park from vehicle
+Config.LockDistance  = 10.0    -- max distance for lock/unlock interaction
+Config.SpawnDistance = 150.0   -- proximity radius: vehicles only spawn when a player is within this range
+Vehicle Rules
+Config.RequireEngineOff = true    -- engine must be off before parking
+Config.MinHealthToPark  = 100.0   -- minimum body health to allow parking
 
--- Distances (metres)
-Config.ParkDistance  = 5.0    -- max range for park/retrieve
-Config.LockDistance  = 10.0   -- max range for lock/unlock
-Config.SpawnDistance = 150.0  -- spawn radius on player login
-
--- Vehicle rules
-Config.RequireEngineOff = true    -- engine must be off to park
-Config.SaveDamage       = true    -- persist damage
-Config.SaveMods         = true    -- persist mods
-Config.SaveFuel         = true    -- persist fuel
-Config.MinHealthToPark  = 100.0   -- minimum body health
-
--- Progress bar durations (ms)
-Config.ParkDuration = 3000
-Config.LockDuration = 800
-
--- Cooldowns (ms)
-Config.ParkCooldown = 3000
-Config.LockCooldown = 1000
-
--- Blacklisted vehicle classes (won't be parkable)
 Config.BlacklistedClasses = {
-    [14] = true,  -- Boats
-    [21] = true,  -- Trains
+    [14] = true,  -- 🚤 Boats
+    [21] = true,  -- 🚂 Trains
 }
-```
+Cooldowns & Durations (ms)
+Config.ParkDuration = 3000   -- progress bar duration when parking
+Config.LockDuration = 800    -- progress bar duration when locking/unlocking
 
-### Adding a New Language
-
-Open `config.lua` and add a new locale block:
-
-```lua
-Config.Locales.fr = {
-    target_park      = '🅿️ Garer le véhicule',
-    target_unpark    = '🚗 Récupérer le véhicule',
-    target_lock      = '🔒 Verrouiller',
-    target_unlock    = '🔓 Déverrouiller',
-    vehicle_parked   = '🅿️ Véhicule garé en sécurité',
-    -- ... copy all keys from Config.Locales.en and translate
+Config.ParkCooldown = 3000
+Config.LockCooldown = 1000   -- enforced BOTH client- and server-side
+Proximity Loading
+Config.Performance = {
+    proximityCheckInterval    = 5000,   -- ms between server-side proximity sweeps
+    proximityDespawnEnabled   = true,   -- despawn vehicles nobody is near
+    despawnDistanceMultiplier = 1.5,    -- despawn radius = SpawnDistance * this (hysteresis)
+    despawnGraceMs            = 30000,  -- ms with nobody nearby before despawning
 }
-```
+Sound & Visual FX
+Config.EnableHornFlash = true   -- blink lights on lock/unlock
+Config.FlashCount      = 2
+Config.FlashDelay      = 200    -- ms between flashes
 
-Then set `Config.Locale = 'fr'`. Done.
+Config.ParkSound   = { enabled = true, audioName = 'CONFIRM_BEEP', audioRef = 'HUD_MINI_GAME_SOUNDSET' }
+Config.UnparkSound = { enabled = true, audioName = 'DOOR_OPEN',    audioRef = 'GTAO_FM_EVENTS_SOUNDSET' }
+A note on Config.SaveDamage / Config.SaveMods / Config.SaveFuel: these flags exist in the config but aren't individually wired up yet — lib.getVehicleProperties() always captures the full property set (damage, mods, fuel, paint, everything) regardless of these flags. They're reserved for a future selective-persistence pass and left in place so nothing reading them today breaks.
 
----
+🎮 Usage & Controls
+Everything runs through ox_target — there is no keybind system.
 
-## 👑 Admin Commands
+Situation	ox_target Option
+Standing near your own unlocked vehicle	🔒 Lock Vehicle
+Standing near your own locked vehicle	🔓 Unlock Vehicle
+In your own vehicle, engine off, not yet parked	🅿️ Park Vehicle
+Standing near your own parked vehicle	🚗 Retrieve Vehicle
+Get in a parked vehicle and start the engine	Auto-retrieves — no interaction needed
+🏗️ Architecture
+rde_parking/
+├── fxmanifest.lua
+├── config.lua            ← Config + Config.Locales (en/de)
+├── server/
+│   └── main.lua           ← proximity sweep, callbacks, statebag writes, GlobalState
+└── client/
+    └── main.lua            ← ox_target interactions, statebag handlers, FX
 
-| Command | Description | Permission |
-| --- | --- | --- |
-| `/parkingstats` | Shows spawned vehicles, DB count, active locks | `group.admin` |
-| `/parkingreload` | Despawns all parked vehicles and re-spawns them fresh | `group.admin` |
-| `/parkingcleanup` | Runs the auto-delete cleanup manually | `group.admin` |
+Proximity Loading
+A server thread (RunProximitySweep, default every 5s via Config.Performance.proximityCheckInterval) compares every online player's position against a lightweight in-memory parkIndex — coordinates only, never full properties. Vehicles within Config.SpawnDistance of any player get spawned; vehicles nobody has been within despawnDistanceMultiplier × SpawnDistance of for despawnGraceMs get despawned. The database row is the permanent source of truth — spawning and despawning only ever touch the in-world entity.
 
----
+The sweep also runs immediately whenever a player finishes loading (ox:playerLoaded), so vehicles near a fresh spawn point appear without waiting for the next scheduled tick — and once on resource start, to catch any players already connected through a resource restart.
 
-## 📡 Nostr Logging
+Statebags (RDE OX Standards v2)
+Every entity statebag this resource sets is prefixed with Config.StatebagPrefix (rde_parking_):
 
-If [rde_nostr_log](https://github.com/RedDragonElite/rde_nostr_log) is installed and started, the parking system automatically logs events to the Nostr network — decentralized, permanent, uncensorable.
+Key	Meaning
+rde_parking_parked	Vehicle is flagged as parked
+rde_parking_vehicleId	ox_core vehicle ID
+rde_parking_plate	License plate
+rde_parking_locked	Current lock state — the only sync path for lock/unlock
+rde_parking_props	Full vehicle properties — ensures late-joining players see correct mods
+rde_parking_owner	Owning character's charId
+🔧 Developer API
+Server Events
+-- Force a full reload of the parking index + an immediate proximity sweep
+-- (also exposed as /parkingreload)
+LoadParkingIndex()
+RunProximitySweep()
 
-**Events logged:**
+-- Publish the public GlobalState view manually after an external change
+PublishParkingState()
+GlobalState Reads (any resource)
+local active  = GlobalState.rde_parking_active         -- { [vehicleId] = { plate, coords, locked } }
+local spawned = GlobalState.rde_parking_spawned_count   -- number, currently spawned (nearby) vehicles
+Client Events
+-- Fired by the server after a vehicle is spawned (broadcast to ALL clients, not just one)
+RegisterNetEvent('rde_parking:applyVehicleProps', function(netId, props) ... end)
 
-| Event | Message |
-| --- | --- |
-| Vehicle parked | `🅿️ [PARKING] PlayerName parked ABC1234 at x / y / z` |
-| Vehicle retrieved | `🚗 [PARKING] PlayerName retrieved ABC1234` |
-| Admin /parkingstats | `👑 [PARKING ADMIN] AdminName – parkingstats` |
-| Admin /parkingreload | `👑 [PARKING ADMIN] AdminName – parkingreload` |
-| Admin /parkingcleanup | `👑 [PARKING ADMIN] AdminName – parkingcleanup` |
+-- Fired after a successful unpark
+RegisterNetEvent('rde_parking:vehicleUnparked', function(plate) ... end)
+🛡️ Security
+The v1.1.0 RDE OX Standards audit caught and fixed two production-relevant bugs from the original release:
 
-**No rde_nostr_log installed?** The script checks `GetResourceState('rde_nostr_log')` before every call. Not running = complete silence, not a single error.
+1. Missing ownership check on lock sync. Previously, any client could call the lock-sync event with an arbitrary plate/netId and lock or unlock any vehicle on the server — the server trusted the client's input blindly. Now every lock/unlock request is verified server-side against vehicles.owner before anything happens, with a cooldown on top.
 
----
+2. Vehicle props only broadcast to one client. Mods and paint were only sent to whoever's client triggered the spawn — other nearby players saw the vehicle with no tuning applied. Props are now broadcast to all connected clients and written to the entity statebag, so anyone streaming the vehicle in later — including late joiners — receives the correct appearance automatically.
 
-## 🗄️ Database
+Beyond the audit fixes, the baseline security model:
 
-The script auto-creates one table on first start:
+Every park, lock, and unlock action is verified server-side against the vehicles table — never trusted from the client
+Per-player parking lock prevents concurrent park-spam from a single source
+Lock/unlock cooldown enforced on both client and server
+Single statebag sync path per state change — no parallel TriggerClientEvent for the same data, eliminating an entire class of desync bugs
+📋 Commands
+Admin (restricted = group.admin)
+Command	Description
+/parkingstats	Show spawned (nearby) / indexed (total) / DB parked counts
+/parkingreload	Reload the parking index from the database and re-run the proximity sweep
+/parkingcleanup	Delete vehicles older than Config.AutoDeleteAfterDays
+🗄️ Database
+Table is auto-created on first start:
 
-```sql
-CREATE TABLE IF NOT EXISTS `rde_parked_vehicles` (
-    `id`         INT AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` INT NOT NULL UNIQUE,
-    `plate`      VARCHAR(20) NOT NULL,
-    `coords`     TEXT NOT NULL,
-    `heading`    FLOAT NOT NULL,
-    `props`      LONGTEXT NOT NULL,
-    `locked`     TINYINT(1) DEFAULT 0,
-    `parked_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_vehicle_id` (`vehicle_id`),
-    INDEX `idx_plate`      (`plate`),
-    INDEX `idx_parked_at`  (`parked_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
+CREATE TABLE rde_parked_vehicles (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id  INT NOT NULL UNIQUE,
+    plate       VARCHAR(20) NOT NULL,
+    coords      TEXT NOT NULL,
+    heading     FLOAT NOT NULL,
+    props       LONGTEXT NOT NULL,
+    locked      TINYINT(1) DEFAULT 0,
+    parked_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_vehicle_id (vehicle_id),
+    INDEX idx_plate      (plate),
+    INDEX idx_parked_at  (parked_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+Schema is unchanged from v1.0.0 — no migration step required when upgrading.
 
-`props` stores the full `lib.getVehicleProperties` output — mods, colours, extras, fuel, damage, everything. MariaDB 10.5+ recommended.
+⚡ Performance
+Architecture
+Parked vehicles only exist as world entities while a player is actually within range. The proximity sweep keeps entity count proportional to where players currently are, not to the total size of the rde_parked_vehicles table — a server with thousands of parked vehicles spread across the map costs roughly the same as one with a hundred, as long as players aren't standing next to all of them at once.
 
----
+The lightweight in-memory index that drives the sweep holds only plate/coordinates/heading/locked/owner — never the full property blob, which is only pulled from the database at the exact moment a vehicle is about to spawn.
 
-## 🔧 Exports
+Optimization Tips
+Raise proximityCheckInterval on servers with very large parked-vehicle counts to reduce sweep frequency
+Lower despawnGraceMs if you want vehicles to clear out of memory faster in high-traffic areas
+despawnDistanceMultiplier should stay above 1.0 — a value too close to SpawnDistance causes pop-in/pop-out flicker right at the boundary
+🐛 Troubleshooting
+Parked vehicles don't appear when I get close?
+Run /parkingreload in console. If they still don't show up, confirm oxmysql is fully started before rde_parking — check the ensure order in server.cfg.
 
-Other resources can hook into the parking system server-side:
+Vehicle mods/paint not showing for other players?
+This was the v1.1.0 audit fix — confirm you're actually on v1.1.0 and not an older build. Props now broadcast to all clients and sync via the rde_parking_props statebag.
 
-```lua
--- Check if a vehicle plate is currently parked
--- (returns boolean)
-local isParked = lib.callback.await('rde_parking:isVehicleParked', false, plate)
+Lock/unlock does nothing?
+Check the cooldown — Config.LockCooldown is enforced on both client and server. Also confirm the vehicle is actually owned by your character; ownership is verified server-side.
 
--- Get all vehicles owned by a character
--- (returns array of { vehicleId, plate, model })
-local vehicles = lib.callback.await('rde_parking:getOwnedVehicles', false)
-```
+"No permission" on admin commands?
+Admin commands use lib.addCommand with restricted = 'group.admin' — verify your ox_core group via your permissions setup, not Config.AdminGroups (this resource doesn't use that pattern for its own commands).
 
----
+Vehicle parks but disappears entirely instead of staying visible?
+Check Config.SpawnDistance — the vehicle you just parked is adopted directly into the spawned cache using its live netId, so it should stay visible to you immediately. If it vanishes, confirm no other resource is deleting the entity on the same frame.
 
-## 🐛 Troubleshooting
+Nostr logger not connecting?
+[RDE | PARKING] Resource "rde_nostr_log" not found in console means rde_nostr_log isn't installed — this is expected and harmless if you don't want decentralized logging. Install it and ensure it starts before rde_parking to enable.
 
-### Park option not showing up
-- Make sure `ox_target` is started **before** `rde_parking` in `server.cfg`.
-- The system uses `GetResourceState('ox_target')` to wait for ox_target — not `exports.ox_target` which is always a non-nil table.
-- Enable `Config.Debug = true` — if you see `ox_target registered ✅` in client console, targets are loaded.
-
-### Park option shows but clicking does nothing / "engine must be off"
-- Engine check happens in `onSelect` with a notification — the option intentionally shows even when engine is on.
-- Turn the engine off first, then click Park.
-
-### Vehicle doesn't re-spawn on login
-- The system waits 5 seconds after `ox:playerLoaded` — increase the `SetTimeout(5000, ...)` in `server/main.lua` if your server loads characters slowly.
-- Enable `Config.Debug = true` and check server console for spawn logs.
-
-### "Not your vehicle" when it clearly is
-- The ownership cache is built from the `vehicles` table in your database.
-- The cache is sent to the client after `ox:playerLoaded` via `rde_parking:updateOwnershipCache`.
-- If it's empty, check your `vehicles` table has the correct `owner` column matching `charId`.
-
-### Lock label shows wrong text / wrong icon
-- This was a bug in older versions caused by ox_target ignoring the second return value of `canInteract`.
-- **This is fixed** — there are now two separate targets: `rde_parking_lock` (shows when unlocked) and `rde_parking_unlock` (shows when locked).
-
-### No horn / no blinkers when locking
-- `SoundVehicleHornThisFrame` must be called every frame for the duration — calling it once does nothing. This is handled correctly.
-- `SetVehicleIndicatorLights` is used for actual blinkers — not `SetVehicleLights` which controls headlights.
-- If still silent, check that the vehicle entity exists and you are close enough.
-
-### Lock not syncing to other players
-- Lock sync requires the vehicle to have a valid network ID (`NetworkGetNetworkIdFromEntity`).
-- Make sure the vehicle is networked (it will be if spawned by the server on login).
-
-### Database error on start
-- Make sure `oxmysql` is started before `rde_parking` in `server.cfg`.
-- The script waits for oxmysql to reach `started` state before running any queries.
-
----
-
-## 🗺️ Roadmap
-
-### v1.1 (Planned)
-- [ ] **Parking zones** — restrict parking to defined areas only
-- [ ] **Garage integration** — park into persistent garages with slot management
-- [ ] **Parking fee** — optional cost per park (ox_inventory)
-- [ ] **Vehicle list UI** — view and retrieve all your parked vehicles from a menu
-
-### v2.0 (Future)
-- [ ] **Impound system** — police can tow/impound vehicles
-- [ ] **Multi-character support** — vehicles tied to character, not just account
-- [ ] **Parking tickets** — police can leave fines on parked vehicles
-- [ ] **Map blips** — optional blip for your parked vehicle location
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/AmazingFeature`
-3. Commit your changes: `git commit -m 'Add AmazingFeature'`
-4. Push to the branch: `git push origin feature/AmazingFeature`
-5. Open a Pull Request
-
-### Bug Reports
-Please include:
-- FiveM server version & build
-- ox_core / ox_lib / ox_target versions
-- Full server **and** client console output
-- Steps to reproduce
-
----
-
-## 📄 License
-
-This project is licensed under the **RDE Black Flag License**.
-
-```
+📝 Changelog
+v1.1.0 — RDE OX Standards v2 Overhaul (current)
+✨ Proximity Loading — vehicles spawn/despawn based on player distance instead of all spawning at boot
+✨ GlobalState register (rde_parking_active, rde_parking_spawned_count) for external resources
+✨ Prefixed, statebag-based lock & props synchronization — no double broadcast
+🐛 Fix: missing ownership check on lock sync — any client could previously lock/unlock any vehicle
+🐛 Fix: vehicle props only broadcast to one client instead of all nearby players
+🔧 fxmanifest.lua: /server:7290 dependency added (RDE Standard)
+🔧 Database schema unchanged — no migration step needed
+v1.0.0 — Initial release
+✨ ox_target driven park / retrieve / lock / unlock
+✨ Full vehicle property persistence via lib.getVehicleProperties()
+✨ Auto-retrieve on engine start
+✨ EN / DE locales
+📜 License
 ###################################################################################
 #                                                                                 #
 #      .:: RED DRAGON ELITE (RDE)  -  BLACK FLAG SOURCE LICENSE v6.66 ::.         #
 #                                                                                 #
-#   PROJECT:    RDE Parking | Parking & car lock system for FiveM.                #
+#   PROJECT:    RDE_PARKING v1.1.0 (PROXIMITY-LOADED PARKING & LOCK SYSTEM)       #
 #   ARCHITECT:  .:: RDE ⧌ Shin [△ ᛋᛅᚱᛒᛅᚾᛏᛋ ᛒᛁᛏᛅ ▽] ::. | https://rd-elite.com     #
 #   ORIGIN:     https://github.com/RedDragonElite                                 #
 #                                                                                 #
@@ -416,10 +294,11 @@ This project is licensed under the **RDE Black Flag License**.
 #      Cost: 0.00€. If you paid for this, you got scammed by a rat.               #
 #                                                                                 #
 #   2. // THE TEBEX KILL SWITCH (COMMERCIAL SUICIDE)                              #
+#      Listen closely, you parasites:                                             #
 #      If I find this script on Tebex, Patreon, or in a paid "Premium Pack":      #
 #      > I will DMCA your store into oblivion.                                    #
 #      > I will publicly shame your community.                                    #
-#      > I hope your server lag spikes to 9999ms every time you blink.            #
+#      > I hope every parking spot you ever pull into is already taken.           #
 #      SELLING FREE WORK IS THEFT. AND I AM THE JUDGE.                            #
 #                                                                                 #
 #   3. // THE CREDIT OATH                                                         #
@@ -428,8 +307,8 @@ This project is licensed under the **RDE Black Flag License**.
 #      Don't be a skid. Respect the architecture.                                 #
 #                                                                                 #
 #   4. // THE CURSE OF THE COPY-PASTE                                             #
-#      This code uses StateBags, ox_inventory stashes, and layered callbacks.     #
-#      If you just copy-paste without reading, it WILL break.                     #
+#      This code uses statebags, proximity streaming, and a layered sync         #
+#      architecture. If you just copy-paste without reading, it WILL break.       #
 #      Don't come crying to my DMs. RTFM or learn to code.                        #
 #                                                                                 #
 #   --------------------------------------------------------------------------    #
@@ -437,32 +316,382 @@ This project is licensed under the **RDE Black Flag License**.
 #   "REJECT MODERN MEDIOCRITY. EMBRACE RDE SUPERIORITY."                          #
 #   --------------------------------------------------------------------------    #
 ###################################################################################
-```
+TL;DR:
 
----
+✅ Free forever — use it, edit it, learn from it
+✅ Keep the header — credit where it's due
+❌ Don't sell it — commercial use = instant DMCA
+❌ Don't be a skid — copy-paste without reading won't work anyway
+🌐 Community & Support
+🐙 GitHub	RedDragonElite
+🌍 Website	rd-elite.com
+🔵 Nostr (RDE)	RedDragonElite
+🔵 Nostr (Shin)	SerpentsByte
+🎮 RDE Props	rde_props
+🚪 RDE Doors	rde_doors
+🚨 RDE AIPD	rde_aipd
+📡 RDE Nostr Log	rde_nostr_log
+When asking for help, always include:
 
-## 🙏 Credits
+Full error from server console or txAdmin
+Your server.cfg resource start order
+ox_core / ox_lib versions in use
 
-### Built With
-- [ox_core](https://github.com/communityox/ox_core) — The only framework worth building on
-- [ox_lib](https://github.com/communityox/ox_lib) — UI, progress bars, vehicle properties, animations
-- [ox_target](https://github.com/communityox/ox_target) — Entity interaction system
-- [oxmysql](https://github.com/communityox/oxmysql) — Database connector
-- [rde_nostr_log](https://github.com/RedDragonElite/rde_nostr_log) — Decentralized logging
+"We build the future on the graves of paid resources."
 
-### Special Thanks
-- Overextended team for the entire OX ecosystem
-- The FiveM community for pushing the standard higher
-- Everyone who tests, reports bugs, and contributes
+REJECT MODERN MEDIOCRITY. EMBRACE RDE SUPERIORITY.
 
----
+[![Website](https://img.shields.io/badge/Website-Visit-red?style=for-the-badge&logo=google-chrome)](https://rd-elite.com)
+[![Nostr](https://img.shields.io/badge/Nostr-Follow-purple?style=for-the-badge&logo=rss)](https://primal.net/p/npub1wr4e24zn6zzjqx8kvnelfvktf0pu6l2gx4gvw06zead2eqyn23sq9tsd94)
 
-<div align="center">
+🐉 Made with 🔥 by Red Dragon Elite
 
-**Made with 🔥 by [.:: Red Dragon Elite ::. | SerpentsByte](https://rd-elite.com)**
+⬆ Back to Top# 🅿️ rde_parking
 
-*Part of the [RDE Arsenal](https://github.com/RedDragonElite) — 55+ next-gen FiveM resources, all FREE.*
+🔥 PROXIMITY-LOADED PARKING & LOCK SYSTEM V1.1.0 — Built on ox_core & Statebags! 🅿️
 
-[⬆ Back to Top](#%EF%B8%8F-rde-parking-system)
+[![Version](https://img.shields.io/badge/version-1.1.0-red?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
+[![License](https://img.shields.io/badge/license-RDE%20Black%20Flag%20v6.66-black?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking/blob/main/LICENSE)
+[![FiveM](https://img.shields.io/badge/FiveM-Compatible-blue?style=for-the-badge)](https://fivem.net)
+[![ox_core](https://img.shields.io/badge/Framework-ox__core-blue?style=for-the-badge)](https://github.com/overextended/ox_core)
+[![Nostr](https://img.shields.io/badge/Nostr-Decentralized-purple?style=for-the-badge)](https://github.com/RedDragonElite/rde_nostr_log)
+[![Price](https://img.shields.io/badge/price-FREE%20FOREVER-brightgreen?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
 
-</div>
+**Proximity-streamed vehicle parking, statebag-synced locking, full property persistence, and zero-entity-bloat performance — all in one resource.**
+
+Built on ox_core · ox_lib · ox_target · oxmysql
+
+Built by Red Dragon Elite | SerpentsByte
+
+📖 Table of Contents
+Overview
+Why RDE Parking?
+Features
+Dependencies
+Installation
+Configuration
+Usage & Controls
+Architecture
+Developer API
+Security
+Commands
+Database
+Performance
+Troubleshooting
+Changelog
+License
+🎯 Overview
+RDE Parking is a production-grade parking and vehicle-lock system for FiveM servers. Server-side proximity streaming, full statebag synchronization for both lock state and vehicle mods, ox_target interaction, persistent MySQL storage, server-validated ownership on every action, and optional decentralized Nostr logging — free forever.
+
+v1.1.0 is a full RDE OX Standards v2 overhaul: parked vehicles are no longer all spawned at server boot. They stream in only when a player is actually nearby, and despawn again once nobody is — without ever touching the database row. Two real security/sync bugs from the original release were also found and fixed during the audit (see Security).
+
+🔥 Why RDE Parking?
+Other Parking Scripts	✅ RDE Parking
+Every parked car spawns at boot, forever	Proximity-streamed — spawns only near players, despawns when empty
+Client trusts its own plate/netId for locking	Server-side owner verification on every lock/unlock
+Vehicle mods only visible to whoever parked it	Statebag + broadcast sync — every nearby player sees correct mods
+Polling loops checking distance every frame	Throttled server sweep (default 5s), statebag-driven client reactions
+Single TriggerClientEvent spaghetti	One sync path per state change — UpdateStatebag-style, no double broadcast
+ESX / QBCore bloat	ox_core only — the future, not the past
+Discord webhooks for logs (deletable, bannable)	Optional decentralized Nostr logging — permanent & uncensorable
+Paid or locked down	100% free forever — RDE Black Flag
+✨ Features
+🅿️ Parking & Retrieval
+ox_target driven — park, retrieve, lock and unlock all through context interaction, no keybind hell
+Engine-off requirement and minimum body-health threshold before a vehicle can be parked (both configurable)
+Full property capture on park via lib.getVehicleProperties() — mods, paint, livery, damage, fuel, everything
+Auto-retrieve on engine start — get back in a parked vehicle and start the engine, it unparks itself automatically
+Vehicle-class blacklist (boats, trains, etc. excluded from parking by default)
+📡 Proximity Loading (RDE OX Standards v2)
+Parked vehicles are NOT all spawned at once — a throttled server thread (RunProximitySweep, default every 5s) spawns a vehicle only once a player comes within Config.SpawnDistance
+Despawns again after a grace period once nobody has been nearby — the database row is untouched, the vehicle simply respawns the moment someone gets close again
+Despawn radius uses a hysteresis multiplier over the spawn radius to avoid pop-in/pop-out flicker at the boundary
+A lightweight in-memory index (coords/plate/locked only — no props) drives the sweep; full vehicle properties are only pulled from the database the instant a vehicle actually spawns
+🔄 Statebag Sync
+Lock state and vehicle properties both sync through prefixed entity statebags (rde_parking_*) — single source of truth, no parallel TriggerClientEvent for the same data
+Late joiners and players streaming a vehicle in from far away still receive correct mods/paint/lock state automatically via the statebag, not just whoever was online at spawn time
+GlobalState.rde_parking_active and GlobalState.rde_parking_spawned_count expose a lightweight public view (plate/coords/locked only) for other resources — HUD, minimap, admin tools — with zero callback roundtrip
+🛡️ Security
+Server-side ownership verification on every park, lock, and unlock action against the vehicles table — never trusts the client's plate or netId blindly
+Per-player parking lock to prevent concurrent park-spam from the same source
+Server- and client-side lock/unlock cooldown
+🐉 Optional Nostr Logging
+Park and retrieve events logged to rde_nostr_log if present — decentralized, uncensorable, zero config required if the resource isn't installed
+🌍 Multilanguage
+Full English & German out of the box via Config.Locales — add a language by copying one block
+📦 Dependencies
+Resource	Required	Notes
+oxmysql	✅ Required	Database layer
+ox_core	✅ Required	Player/character framework, vehicle ownership
+ox_lib	✅ Required	Progress bars, notifications, callbacks, vehicle property get/set
+ox_target	✅ Required	All park/retrieve/lock/unlock interactions
+rde_nostr_log	⭕ Optional	Decentralized event logging — runs fine without it
+🚀 Installation
+1. Clone the repository
+cd resources
+git clone https://github.com/RedDragonElite/rde_parking.git
+2. Add to server.cfg
+ensure oxmysql
+ensure ox_lib
+ensure ox_core
+ensure ox_target
+ensure rde_parking
+
+# Optional, install before rde_parking if you want decentralized logging
+ensure rde_nostr_log
+Order matters. rde_parking must start after all its dependencies.
+
+3. Database
+The rde_parked_vehicles table is created automatically on first start. No manual SQL import needed.
+
+4. Configure (Optional)
+Edit config.lua to adjust distances, cooldowns, proximity sweep behavior, and language.
+
+5. Restart
+restart rde_parking
+Test by parking a vehicle with /parkingstats open in another window to watch the counters move.
+
+⚙️ Configuration
+Core
+Config.Locale = 'en'                  -- 'en' or 'de'
+Config.Debug  = false                 -- verbose console output, set false for live servers
+
+Config.AutoDeleteParkedVehicles = true
+Config.AutoDeleteAfterDays      = 7   -- 0 = disabled
+Distances (metres)
+Config.ParkDistance  = 5.0     -- max distance to park from vehicle
+Config.LockDistance  = 10.0    -- max distance for lock/unlock interaction
+Config.SpawnDistance = 150.0   -- proximity radius: vehicles only spawn when a player is within this range
+Vehicle Rules
+Config.RequireEngineOff = true    -- engine must be off before parking
+Config.MinHealthToPark  = 100.0   -- minimum body health to allow parking
+
+Config.BlacklistedClasses = {
+    [14] = true,  -- 🚤 Boats
+    [21] = true,  -- 🚂 Trains
+}
+Cooldowns & Durations (ms)
+Config.ParkDuration = 3000   -- progress bar duration when parking
+Config.LockDuration = 800    -- progress bar duration when locking/unlocking
+
+Config.ParkCooldown = 3000
+Config.LockCooldown = 1000   -- enforced BOTH client- and server-side
+Proximity Loading
+Config.Performance = {
+    proximityCheckInterval    = 5000,   -- ms between server-side proximity sweeps
+    proximityDespawnEnabled   = true,   -- despawn vehicles nobody is near
+    despawnDistanceMultiplier = 1.5,    -- despawn radius = SpawnDistance * this (hysteresis)
+    despawnGraceMs            = 30000,  -- ms with nobody nearby before despawning
+}
+Sound & Visual FX
+Config.EnableHornFlash = true   -- blink lights on lock/unlock
+Config.FlashCount      = 2
+Config.FlashDelay      = 200    -- ms between flashes
+
+Config.ParkSound   = { enabled = true, audioName = 'CONFIRM_BEEP', audioRef = 'HUD_MINI_GAME_SOUNDSET' }
+Config.UnparkSound = { enabled = true, audioName = 'DOOR_OPEN',    audioRef = 'GTAO_FM_EVENTS_SOUNDSET' }
+A note on Config.SaveDamage / Config.SaveMods / Config.SaveFuel: these flags exist in the config but aren't individually wired up yet — lib.getVehicleProperties() always captures the full property set (damage, mods, fuel, paint, everything) regardless of these flags. They're reserved for a future selective-persistence pass and left in place so nothing reading them today breaks.
+
+🎮 Usage & Controls
+Everything runs through ox_target — there is no keybind system.
+
+Situation	ox_target Option
+Standing near your own unlocked vehicle	🔒 Lock Vehicle
+Standing near your own locked vehicle	🔓 Unlock Vehicle
+In your own vehicle, engine off, not yet parked	🅿️ Park Vehicle
+Standing near your own parked vehicle	🚗 Retrieve Vehicle
+Get in a parked vehicle and start the engine	Auto-retrieves — no interaction needed
+🏗️ Architecture
+rde_parking/
+├── fxmanifest.lua
+├── config.lua            ← Config + Config.Locales (en/de)
+├── server/
+│   └── main.lua           ← proximity sweep, callbacks, statebag writes, GlobalState
+└── client/
+    └── main.lua            ← ox_target interactions, statebag handlers, FX
+
+Proximity Loading
+A server thread (RunProximitySweep, default every 5s via Config.Performance.proximityCheckInterval) compares every online player's position against a lightweight in-memory parkIndex — coordinates only, never full properties. Vehicles within Config.SpawnDistance of any player get spawned; vehicles nobody has been within despawnDistanceMultiplier × SpawnDistance of for despawnGraceMs get despawned. The database row is the permanent source of truth — spawning and despawning only ever touch the in-world entity.
+
+The sweep also runs immediately whenever a player finishes loading (ox:playerLoaded), so vehicles near a fresh spawn point appear without waiting for the next scheduled tick — and once on resource start, to catch any players already connected through a resource restart.
+
+Statebags (RDE OX Standards v2)
+Every entity statebag this resource sets is prefixed with Config.StatebagPrefix (rde_parking_):
+
+Key	Meaning
+rde_parking_parked	Vehicle is flagged as parked
+rde_parking_vehicleId	ox_core vehicle ID
+rde_parking_plate	License plate
+rde_parking_locked	Current lock state — the only sync path for lock/unlock
+rde_parking_props	Full vehicle properties — ensures late-joining players see correct mods
+rde_parking_owner	Owning character's charId
+🔧 Developer API
+Server Events
+-- Force a full reload of the parking index + an immediate proximity sweep
+-- (also exposed as /parkingreload)
+LoadParkingIndex()
+RunProximitySweep()
+
+-- Publish the public GlobalState view manually after an external change
+PublishParkingState()
+GlobalState Reads (any resource)
+local active  = GlobalState.rde_parking_active         -- { [vehicleId] = { plate, coords, locked } }
+local spawned = GlobalState.rde_parking_spawned_count   -- number, currently spawned (nearby) vehicles
+Client Events
+-- Fired by the server after a vehicle is spawned (broadcast to ALL clients, not just one)
+RegisterNetEvent('rde_parking:applyVehicleProps', function(netId, props) ... end)
+
+-- Fired after a successful unpark
+RegisterNetEvent('rde_parking:vehicleUnparked', function(plate) ... end)
+🛡️ Security
+The v1.1.0 RDE OX Standards audit caught and fixed two production-relevant bugs from the original release:
+
+1. Missing ownership check on lock sync. Previously, any client could call the lock-sync event with an arbitrary plate/netId and lock or unlock any vehicle on the server — the server trusted the client's input blindly. Now every lock/unlock request is verified server-side against vehicles.owner before anything happens, with a cooldown on top.
+
+2. Vehicle props only broadcast to one client. Mods and paint were only sent to whoever's client triggered the spawn — other nearby players saw the vehicle with no tuning applied. Props are now broadcast to all connected clients and written to the entity statebag, so anyone streaming the vehicle in later — including late joiners — receives the correct appearance automatically.
+
+Beyond the audit fixes, the baseline security model:
+
+Every park, lock, and unlock action is verified server-side against the vehicles table — never trusted from the client
+Per-player parking lock prevents concurrent park-spam from a single source
+Lock/unlock cooldown enforced on both client and server
+Single statebag sync path per state change — no parallel TriggerClientEvent for the same data, eliminating an entire class of desync bugs
+📋 Commands
+Admin (restricted = group.admin)
+Command	Description
+/parkingstats	Show spawned (nearby) / indexed (total) / DB parked counts
+/parkingreload	Reload the parking index from the database and re-run the proximity sweep
+/parkingcleanup	Delete vehicles older than Config.AutoDeleteAfterDays
+🗄️ Database
+Table is auto-created on first start:
+
+CREATE TABLE rde_parked_vehicles (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id  INT NOT NULL UNIQUE,
+    plate       VARCHAR(20) NOT NULL,
+    coords      TEXT NOT NULL,
+    heading     FLOAT NOT NULL,
+    props       LONGTEXT NOT NULL,
+    locked      TINYINT(1) DEFAULT 0,
+    parked_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_vehicle_id (vehicle_id),
+    INDEX idx_plate      (plate),
+    INDEX idx_parked_at  (parked_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+Schema is unchanged from v1.0.0 — no migration step required when upgrading.
+
+⚡ Performance
+Architecture
+Parked vehicles only exist as world entities while a player is actually within range. The proximity sweep keeps entity count proportional to where players currently are, not to the total size of the rde_parked_vehicles table — a server with thousands of parked vehicles spread across the map costs roughly the same as one with a hundred, as long as players aren't standing next to all of them at once.
+
+The lightweight in-memory index that drives the sweep holds only plate/coordinates/heading/locked/owner — never the full property blob, which is only pulled from the database at the exact moment a vehicle is about to spawn.
+
+Optimization Tips
+Raise proximityCheckInterval on servers with very large parked-vehicle counts to reduce sweep frequency
+Lower despawnGraceMs if you want vehicles to clear out of memory faster in high-traffic areas
+despawnDistanceMultiplier should stay above 1.0 — a value too close to SpawnDistance causes pop-in/pop-out flicker right at the boundary
+🐛 Troubleshooting
+Parked vehicles don't appear when I get close?
+Run /parkingreload in console. If they still don't show up, confirm oxmysql is fully started before rde_parking — check the ensure order in server.cfg.
+
+Vehicle mods/paint not showing for other players?
+This was the v1.1.0 audit fix — confirm you're actually on v1.1.0 and not an older build. Props now broadcast to all clients and sync via the rde_parking_props statebag.
+
+Lock/unlock does nothing?
+Check the cooldown — Config.LockCooldown is enforced on both client and server. Also confirm the vehicle is actually owned by your character; ownership is verified server-side.
+
+"No permission" on admin commands?
+Admin commands use lib.addCommand with restricted = 'group.admin' — verify your ox_core group via your permissions setup, not Config.AdminGroups (this resource doesn't use that pattern for its own commands).
+
+Vehicle parks but disappears entirely instead of staying visible?
+Check Config.SpawnDistance — the vehicle you just parked is adopted directly into the spawned cache using its live netId, so it should stay visible to you immediately. If it vanishes, confirm no other resource is deleting the entity on the same frame.
+
+Nostr logger not connecting?
+[RDE | PARKING] Resource "rde_nostr_log" not found in console means rde_nostr_log isn't installed — this is expected and harmless if you don't want decentralized logging. Install it and ensure it starts before rde_parking to enable.
+
+📝 Changelog
+v1.1.0 — RDE OX Standards v2 Overhaul (current)
+✨ Proximity Loading — vehicles spawn/despawn based on player distance instead of all spawning at boot
+✨ GlobalState register (rde_parking_active, rde_parking_spawned_count) for external resources
+✨ Prefixed, statebag-based lock & props synchronization — no double broadcast
+🐛 Fix: missing ownership check on lock sync — any client could previously lock/unlock any vehicle
+🐛 Fix: vehicle props only broadcast to one client instead of all nearby players
+🔧 fxmanifest.lua: /server:7290 dependency added (RDE Standard)
+🔧 Database schema unchanged — no migration step needed
+v1.0.0 — Initial release
+✨ ox_target driven park / retrieve / lock / unlock
+✨ Full vehicle property persistence via lib.getVehicleProperties()
+✨ Auto-retrieve on engine start
+✨ EN / DE locales
+📜 License
+###################################################################################
+#                                                                                 #
+#      .:: RED DRAGON ELITE (RDE)  -  BLACK FLAG SOURCE LICENSE v6.66 ::.         #
+#                                                                                 #
+#   PROJECT:    RDE_PARKING v1.1.0 (PROXIMITY-LOADED PARKING & LOCK SYSTEM)       #
+#   ARCHITECT:  .:: RDE ⧌ Shin [△ ᛋᛅᚱᛒᛅᚾᛏᛋ ᛒᛁᛏᛅ ▽] ::. | https://rd-elite.com     #
+#   ORIGIN:     https://github.com/RedDragonElite                                 #
+#                                                                                 #
+#   WARNING: THIS CODE IS PROTECTED BY DIGITAL VOODOO AND PURE HATRED FOR LEAKERS #
+#                                                                                 #
+#   [ THE RULES OF THE GAME ]                                                     #
+#                                                                                 #
+#   1. // THE "FUCK GREED" PROTOCOL (FREE USE)                                    #
+#      You are free to use, edit, and abuse this code on your server.             #
+#      Learn from it. Break it. Fix it. That is the hacker way.                   #
+#      Cost: 0.00€. If you paid for this, you got scammed by a rat.               #
+#                                                                                 #
+#   2. // THE TEBEX KILL SWITCH (COMMERCIAL SUICIDE)                              #
+#      Listen closely, you parasites:                                             #
+#      If I find this script on Tebex, Patreon, or in a paid "Premium Pack":      #
+#      > I will DMCA your store into oblivion.                                    #
+#      > I will publicly shame your community.                                    #
+#      > I hope every parking spot you ever pull into is already taken.           #
+#      SELLING FREE WORK IS THEFT. AND I AM THE JUDGE.                            #
+#                                                                                 #
+#   3. // THE CREDIT OATH                                                         #
+#      Keep this header. If you remove my name, you admit you have no skill.      #
+#      You can add "Edited by [YourName]", but never erase the original creator.  #
+#      Don't be a skid. Respect the architecture.                                 #
+#                                                                                 #
+#   4. // THE CURSE OF THE COPY-PASTE                                             #
+#      This code uses statebags, proximity streaming, and a layered sync         #
+#      architecture. If you just copy-paste without reading, it WILL break.       #
+#      Don't come crying to my DMs. RTFM or learn to code.                        #
+#                                                                                 #
+#   --------------------------------------------------------------------------    #
+#   "We build the future on the graves of paid resources."                        #
+#   "REJECT MODERN MEDIOCRITY. EMBRACE RDE SUPERIORITY."                          #
+#   --------------------------------------------------------------------------    #
+###################################################################################
+TL;DR:
+
+✅ Free forever — use it, edit it, learn from it
+✅ Keep the header — credit where it's due
+❌ Don't sell it — commercial use = instant DMCA
+❌ Don't be a skid — copy-paste without reading won't work anyway
+🌐 Community & Support
+🐙 GitHub	RedDragonElite
+🌍 Website	rd-elite.com
+🔵 Nostr (RDE)	RedDragonElite
+🔵 Nostr (Shin)	SerpentsByte
+🎮 RDE Props	rde_props
+🚪 RDE Doors	rde_doors
+🚨 RDE AIPD	rde_aipd
+📡 RDE Nostr Log	rde_nostr_log
+When asking for help, always include:
+
+Full error from server console or txAdmin
+Your server.cfg resource start order
+ox_core / ox_lib versions in use
+
+"We build the future on the graves of paid resources."
+
+REJECT MODERN MEDIOCRITY. EMBRACE RDE SUPERIORITY.
+
+[![Website](https://img.shields.io/badge/Website-Visit-red?style=for-the-badge&logo=google-chrome)](https://rd-elite.com)
+[![Nostr](https://img.shields.io/badge/Nostr-Follow-purple?style=for-the-badge&logo=rss)](https://primal.net/p/npub1wr4e24zn6zzjqx8kvnelfvktf0pu6l2gx4gvw06zead2eqyn23sq9tsd94)
+
+🐉 Made with 🔥 by Red Dragon Elite
+
+⬆ Back to Top
