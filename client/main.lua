@@ -398,6 +398,18 @@ RegisterNetEvent('rde_parking:vehicleUnparked', function(plate)
     Debug('Unparked confirmed: %s', plate)
 end)
 
+-- 🔗 rde_carservice INTEGRATION
+-- Fired by the parking server when carservice delivers or picks up a vehicle
+-- that was previously parked via rde_parking. Clears parkedCache[plate] so
+-- the player can park the delivered vehicle without hitting the "IsParkedLocally"
+-- guard in ParkVehicle, and so the ox_target options show correctly.
+RegisterNetEvent('rde_parking:clearParkedCache', function(plate)
+    if not plate or plate == '' then return end
+    plate = plate:gsub('%s+', '')
+    State.parkedCache[plate] = nil
+    Debug('parkedCache cleared for plate=%s (carservice integration)', plate)
+end)
+
 RegisterNetEvent('rde_parking:updateOwnershipCache', function(vehicles)
     State.ownershipCache = {}
     for _, v in ipairs(vehicles) do

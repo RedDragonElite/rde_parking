@@ -4,7 +4,7 @@ lua54 'yes'
 
 name        'rde_parking'
 author      'RDE | SerpentsByte'
-version     '1.1.0'
+version     '1.1.1'
 description 'Next-Gen Parking & Car Lock System — ox_core Exclusive, Proximity-Loaded'
 
 shared_scripts {

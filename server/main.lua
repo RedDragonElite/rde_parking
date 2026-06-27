@@ -449,9 +449,16 @@ lib.callback.register('rde_parking:parkVehicle', function(src, plate, coords, he
         return false
     end
 
-    -- Update ox_vehicle stored state
-    local oxVeh = GetOxVehicle(vehicleId)
-    if oxVeh then oxVeh:setStored('parked', true) end
+    -- 🔗 rde_carservice INTEGRATION: Use direct MySQL update instead of
+    --    oxVeh:setStored('parked', true). Two reasons:
+    --    1. setStored('parked', true) with despawn=true would DELETE the entity
+    --       we want to keep in the world — the oxVeh tracking may or may not
+    --       know about our server-spawned entity, making this a silent bomb.
+    --    2. The generic value 'parked' was read by carservice as "vehicle in a
+    --       garage" (stored IS NOT NULL), causing it to spawn a DUPLICATE entity
+    --       → the "parked vehicle disappears" bug. 'rde_parking' is now excluded
+    --       explicitly by carservice's delivery query.
+    MySQL.update.await('UPDATE vehicles SET stored = ? WHERE id = ?', { 'rde_parking', vehicleId })
 
     -- 🆕 Register in the proximity index + spawned cache. The entity the
     -- player was just driving is still alive in the world right now — we
@@ -582,8 +589,11 @@ RegisterNetEvent('rde_parking:unparkVehicle', function(plate)
         local vehicleId = result.vehicle_id
         MySQL.query.await('DELETE FROM rde_parked_vehicles WHERE vehicle_id = ?', { vehicleId })
 
+        -- 🔗 Direct MySQL clear — consistent with parkVehicle's direct MySQL write.
+        --    Also calls oxVeh:setStored(nil, false) as belt-and-suspenders for ox_core tracking.
+        MySQL.update.await('UPDATE vehicles SET stored = NULL WHERE id = ?', { vehicleId })
         local oxVeh = GetOxVehicle(vehicleId)
-        if oxVeh then oxVeh:setStored(nil, false) end
+        if oxVeh then pcall(function() oxVeh:setStored(nil, false) end) end
 
         State.spawnedVehicles[vehicleId] = nil
         State.parkIndex[vehicleId]       = nil
@@ -593,6 +603,124 @@ RegisterNetEvent('rde_parking:unparkVehicle', function(plate)
         PublishParkingState()
         Debug('Vehicle unparked: %s (ID: %s)', plate, vehicleId)
     end
+end)
+
+-- ═══════════════════════════════════════════════════
+--  🔗  rde_carservice INTEGRATION
+--
+--  When carservice delivers or picks up a vehicle, it fires server-side
+--  AddEventHandler events that this block reacts to. This is the single
+--  sync path that keeps both systems in agreement about what is "parked",
+--  "in the world", or "in a garage" at any given moment.
+--
+--  vehicleDelivered: carservice moved the vehicle from garage → world.
+--    Clear rde_parked_vehicles + State so the parking system treats it as
+--    a fresh, unmanaged entity. Also notify the client to clear parkedCache
+--    for this plate — without this, the player can't park the delivered
+--    vehicle because parkedCache[plate] = true blocks ParkVehicle.
+--
+--  vehiclePickedUp: carservice moved the vehicle from world → garage.
+--    The NPC driver took the entity away, so its entity will be cleaned up
+--    by entityRemoved. We only need to remove the DB entry and State refs
+--    so the proximity sweep doesn't attempt to respawn it from the stale
+--    rde_parked_vehicles row on the next tick.
+-- ═══════════════════════════════════════════════════
+
+local function ClearParkedByPlate(plate, notifySource)
+    if not plate or plate == '' then return end
+    plate = TrimPlate(plate)
+
+    local row = MySQL.single.await('SELECT vehicle_id FROM rde_parked_vehicles WHERE plate = ?', { plate })
+    if not row then
+        Debug('ClearParkedByPlate: plate %s not in rde_parked_vehicles — no-op', plate)
+        return
+    end
+
+    local vehicleId = row.vehicle_id
+
+    MySQL.query.await('DELETE FROM rde_parked_vehicles WHERE plate = ?', { plate })
+
+    -- Only delete the entity if it's still the rde_parking-spawned one
+    -- (identified by the rde_parking statebag). carservice may have
+    -- already driven it away or spawned its own entity for this plate.
+    local spawnedData = State.spawnedVehicles[vehicleId]
+    if spawnedData and DoesEntityExist(spawnedData.entity) then
+        local st = Entity(spawnedData.entity).state
+        if st[Config.StatebagPrefix .. 'parked'] then
+            DeleteEntity(spawnedData.entity)
+            Debug('ClearParkedByPlate: deleted stale rde_parking entity for %s', plate)
+        end
+    end
+
+    State.spawnedVehicles[vehicleId] = nil
+    State.parkIndex[vehicleId]       = nil
+
+    PublishParkingState()
+    Debug('ClearParkedByPlate: cleared parked state for plate=%s', plate)
+
+    -- Notify the requesting player's client to drop parkedCache[plate].
+    -- Other clients don't have it in their parkedCache (it's per-character).
+    if notifySource and notifySource > 0 then
+        TriggerClientEvent('rde_parking:clearParkedCache', notifySource, plate)
+    end
+end
+
+AddEventHandler('rde_carservice:vehicleDelivered', function(src, plate)
+    Debug('rde_carservice:vehicleDelivered → plate=%s src=%s', plate, src)
+    ClearParkedByPlate(plate, src)
+end)
+
+AddEventHandler('rde_carservice:vehiclePickedUp', function(src, plate)
+    Debug('rde_carservice:vehiclePickedUp → plate=%s src=%s', plate, src)
+    -- carservice already set stored=DefaultGarage; we only clear the parking row/State.
+    ClearParkedByPlate(plate, src)
+end)
+
+-- Fired by rde_carservice BEFORE delivery starts when the vehicle is detected as
+-- parked via rde_parking.
+--
+-- WHY NO DeleteEntity HERE:
+-- Any server-side DeleteEntity propagates to ALL clients and frees the entity
+-- handle in GTA's pool. If this happens while the carservice CLIENT is calling
+-- CreateVehicle() for the delivery vehicle (progress bar = 2s, model load = 1s,
+-- so CreateVehicle() happens ~3-5s after this event), GTA may hand the newly
+-- freed handle to the delivery vehicle — making State.driverVehicle point to an
+-- entity that the network then confirms as "deleted". The delivery tracking thread
+-- detects DoesEntityExist(State.driverVehicle) = false → cancels. Even a 5s
+-- SetTimeout isn't safe because CreateVehicle timing varies with model cache state.
+--
+-- SAFE APPROACH: delete from DB + clear parkIndex so the proximity SPAWN loop
+-- won't re-create the entity. Keep State.spawnedVehicles[vehicleId] so the
+-- existing proximity DESPAWN loop can remove the entity naturally after
+-- despawnGraceMs (default 30s) once no players are nearby. By that point the
+-- carservice delivery is long established with its own stable handle.
+AddEventHandler('rde_carservice:prepareDeliveryOfParked', function(src, plate)
+    Debug('rde_carservice:prepareDeliveryOfParked → plate=%s src=%s', plate, src)
+    if not plate or plate == '' then return end
+    plate = TrimPlate(plate)
+
+    local row = MySQL.single.await('SELECT vehicle_id FROM rde_parked_vehicles WHERE plate = ?', { plate })
+    if not row then
+        Debug('prepareDeliveryOfParked: plate %s not in rde_parked_vehicles — no-op', plate)
+        return
+    end
+
+    local vehicleId = row.vehicle_id
+
+    -- Delete DB row: proximity spawn loop won't re-create this vehicle.
+    MySQL.query.await('DELETE FROM rde_parked_vehicles WHERE plate = ?', { plate })
+
+    -- Clear park index: removed from spawn candidates.
+    -- DO NOT clear State.spawnedVehicles[vehicleId] — keep it so the proximity
+    -- DESPAWN loop can clean up the entity safely after despawnGraceMs.
+    State.parkIndex[vehicleId] = nil
+
+    PublishParkingState()
+
+    -- Tell the client to drop parkedCache[plate] so the parking ox_target
+    -- options reset correctly once the carservice delivery completes.
+    TriggerClientEvent('rde_parking:clearParkedCache', src, plate)
+    Debug('prepareDeliveryOfParked: DB cleared for plate=%s, entity handed to proximity despawn', plate)
 end)
 
 -- ═══════════════════════════════════════════════════

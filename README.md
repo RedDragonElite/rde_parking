@@ -1,19 +1,22 @@
 # 🅿️ rde_parking
 
-🔥 PROXIMITY-LOADED PARKING & LOCK SYSTEM V1.1.0 — Built on ox_core & Statebags! 🅿️
+🔥 PROXIMITY-LOADED PARKING & LOCK SYSTEM V1.1.1 — Built on ox_core & Statebags! 🅿️
 
-[![Version](https://img.shields.io/badge/version-1.1.0-red?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
+[![Version](https://img.shields.io/badge/version-1.1.1-red?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
 [![License](https://img.shields.io/badge/license-RDE%20Black%20Flag%20v6.66-black?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking/blob/main/LICENSE)
 [![FiveM](https://img.shields.io/badge/FiveM-Compatible-blue?style=for-the-badge)](https://fivem.net)
 [![ox_core](https://img.shields.io/badge/Framework-ox__core-blue?style=for-the-badge)](https://github.com/overextended/ox_core)
 [![Nostr](https://img.shields.io/badge/Nostr-Decentralized-purple?style=for-the-badge)](https://github.com/RedDragonElite/rde_nostr_log)
 [![Price](https://img.shields.io/badge/price-FREE%20FOREVER-brightgreen?style=for-the-badge)](https://github.com/RedDragonElite/rde_parking)
+[![Ecosystem](https://img.shields.io/badge/RDE%20Ecosystem-rde__carservice-orange?style=for-the-badge)](https://github.com/RedDragonElite/rde_carservice)
 
-**Proximity-streamed vehicle parking, statebag-synced locking, full property persistence, and zero-entity-bloat performance — all in one resource.**
+**Proximity-streamed vehicle parking, statebag-synced locking, full property persistence, zero-entity-bloat performance — and fully integrated with `rde_carservice` as part of the RDE ecosystem.**
 
 > Built on ox_core · ox_lib · ox_target · oxmysql
 >
 > Built by Red Dragon Elite | SerpentsByte
+
+> 🤝 **RDE Ecosystem:** `rde_parking` and [`rde_carservice`](https://github.com/RedDragonElite/rde_carservice) are designed to work together. Park a vehicle — call carservice — it auto-unparks and delivers it to you. Pick it up via carservice — the parking entry is gone. Deliver it back — you can park it again. Two scripts, one coherent system, zero conflicts.
 
 ---
 
@@ -27,6 +30,7 @@
 - [Configuration](#-configuration)
 - [Usage & Controls](#-usage--controls)
 - [Architecture](#-architecture)
+- [rde_carservice Integration](#-rde_carservice-integration)
 - [Developer API](#-developer-api)
 - [Security](#-security)
 - [Commands](#-commands)
@@ -42,7 +46,7 @@
 
 RDE Parking is a production-grade parking and vehicle-lock system for FiveM servers. Server-side proximity streaming, full statebag synchronization for both lock state and vehicle mods, ox_target interaction, persistent MySQL storage, server-validated ownership on every action, and optional decentralized Nostr logging — **free forever**.
 
-v1.1.0 is a full RDE OX Standards v2 overhaul: parked vehicles are no longer all spawned at server boot. They stream in only when a player is actually nearby, and despawn again once nobody is — without ever touching the database row. Two real security/sync bugs from the original release were also found and fixed during the audit (see [Security](#-security)).
+v1.1.1 fixes two silent bugs in how the `vehicles.stored` column was written, and completes the bidirectional integration with `rde_carservice` that makes both scripts operate as a single coherent system. Call carservice on a parked vehicle — the parking entry clears automatically, the entity despawns via the proximity system, and the NPC driver brings the car to you. Pick it up via carservice — the parking row is gone. Get it delivered — the ox_target options reset instantly so you can park it again. **Two scripts, one ecosystem.**
 
 ---
 
@@ -54,9 +58,10 @@ v1.1.0 is a full RDE OX Standards v2 overhaul: parked vehicles are no longer all
 | Client trusts its own plate/netId for locking | Server-side owner verification on every lock/unlock |
 | Vehicle mods only visible to whoever parked it | Statebag + broadcast sync — every nearby player sees correct mods |
 | Polling loops checking distance every frame | Throttled server sweep (default 5s), statebag-driven client reactions |
-| Single TriggerClientEvent spaghetti | One sync path per state change — UpdateStatebag-style, no double broadcast |
+| Single TriggerClientEvent spaghetti | One sync path per state change — no double broadcast |
 | ESX / QBCore bloat | ox_core only — the future, not the past |
 | Discord webhooks for logs (deletable, bannable) | Optional decentralized Nostr logging — permanent & uncensorable |
+| Silently conflicts with delivery scripts | Full rde_carservice integration — cross-event sync, zero conflicts |
 | Paid or locked down | 100% free forever — RDE Black Flag |
 
 ---
@@ -84,6 +89,12 @@ v1.1.0 is a full RDE OX Standards v2 overhaul: parked vehicles are no longer all
 - Late joiners and players streaming a vehicle in from far away still receive correct mods/paint/lock state automatically via the statebag, not just whoever was online at spawn time
 - `GlobalState.rde_parking_active` and `GlobalState.rde_parking_spawned_count` expose a lightweight public view (plate/coords/locked only) for other resources — HUD, minimap, admin tools — with zero callback roundtrip
 
+### 🔗 rde_carservice Integration
+
+- Bidirectional event sync with `rde_carservice` (v1.1.0+) — see [rde_carservice Integration](#-rde_carservice-integration)
+- Parking a vehicle marks it as `stored = 'rde_parking'` — carservice explicitly excludes this value, preventing duplicate-entity delivery bugs
+- When carservice delivers or picks up a vehicle, parking state is cleared on both server and client automatically
+
 ### 🛡️ Security
 
 - Server-side ownership verification on every park, lock, and unlock action against the `vehicles` table — never trusts the client's plate or netId blindly
@@ -108,6 +119,7 @@ v1.1.0 is a full RDE OX Standards v2 overhaul: parked vehicles are no longer all
 | `ox_core` | ✅ Required | Player/character framework, vehicle ownership |
 | `ox_lib` | ✅ Required | Progress bars, notifications, callbacks, vehicle property get/set |
 | `ox_target` | ✅ Required | All park/retrieve/lock/unlock interactions |
+| `rde_carservice` | ⭕ Optional | Cross-event integration, runs fine without it |
 | `rde_nostr_log` | ⭕ Optional | Decentralized event logging — runs fine without it |
 
 ---
@@ -130,8 +142,11 @@ ensure ox_core
 ensure ox_target
 ensure rde_parking
 
-# Optional, install before rde_parking if you want decentralized logging
+# Optional — install before rde_parking if you want decentralized logging
 ensure rde_nostr_log
+
+# Optional — install alongside rde_parking for full delivery/pickup integration
+ensure rde_carservice
 ```
 
 > ⚠️ Order matters. `rde_parking` must start **after** all its dependencies.
@@ -267,11 +282,86 @@ Every entity statebag this resource sets is prefixed with `Config.StatebagPrefix
 | `rde_parking_props` | Full vehicle properties — ensures late-joining players see correct mods |
 | `rde_parking_owner` | Owning character's charId |
 
+### `vehicles.stored` Semantic (v1.1.1)
+
+rde_parking writes `stored = 'rde_parking'` when a vehicle is parked in the world via this system. This is intentional and load-bearing:
+
+- `stored IS NULL` → vehicle is freely in the world, not managed by any parking system
+- `stored = 'rde_parking'` → vehicle is in the world AND under rde_parking's management
+- `stored = 'some_garage'` → vehicle is in a garage (not in the world at all)
+
+rde_carservice reads this value and explicitly excludes `stored = 'rde_parking'` from its delivery queries. This prevents the delivery-of-a-live-parked-entity bug that previously caused duplicate vehicles and disappearing parking spots.
+
+---
+
+## 🔗 rde_carservice Integration
+
+rde_parking v1.1.1 introduces full bidirectional integration with `rde_carservice` (requires `rde_carservice` v1.1.0+). Both resources are optional to each other — if either isn't running, the other degrades gracefully with no errors.
+
+### The Problem It Solves
+
+Without integration, two silent bugs existed:
+
+**Bug 1 — Duplicate entity / disappearing parked vehicle:** When a vehicle was parked via rde_parking (`stored = 'parked'`), carservice interpreted `stored IS NOT NULL` as "in a garage" and spawned a *second* entity for the same plate. GTA deleted one of them, causing the parked vehicle to vanish.
+
+**Bug 2 — "Not your vehicle" after delivery:** After carservice delivered a vehicle, the client's `parkedCache[plate]` was still `true` from the previous parking session. `IsParkedLocally()` returned `true`, blocking `ParkVehicle()` silently. The Park option disappeared from ox_target; the player saw Retrieve instead — and nothing worked.
+
+### How It Works
+
+```
+Park via rde_parking
+  └─ UPDATE vehicles SET stored = 'rde_parking'
+
+Carservice Delivery of a PARKED vehicle (auto-unpark)
+  └─ requestDelivery: plate found in rde_parked_vehicles → auto-unpark delivery
+  └─ TriggerEvent('rde_carservice:prepareDeliveryOfParked', src, plate)
+  └─ rde_parking server:
+       ├─ DELETE FROM rde_parked_vehicles WHERE plate = ?   (no re-spawn)
+       ├─ State.parkIndex[id] = nil                          (removed from spawn candidates)
+       ├─ State.spawnedVehicles[id] kept → entity alive, proximity despawn handles it
+       └─ TriggerClientEvent('rde_parking:clearParkedCache', src, plate)
+  └─ rde_parking client: State.parkedCache[plate] = nil  ✅ player can park after delivery
+  └─ UPDATE vehicles SET stored = NULL → NPC driver delivers car to player ✅
+  └─ Entity at parking spot: auto-despawned after despawnGraceMs when nobody nearby
+
+Carservice Delivery from GARAGE (normal flow)
+  └─ SQL AND stored != 'rde_parking' → only real garage vehicles ✅
+
+Carservice Pickup (world → garage)
+  └─ completePickup: TriggerEvent('rde_carservice:vehiclePickedUp', src, plate)
+  └─ rde_parking server: ClearParkedByPlate(plate)
+       └─ removes stale rde_parked_vehicles row → proximity sweep won't respawn it ✅
+```
+
+### Integration Checklist
+
+| | Check |
+|---|---|
+| `rde_parking` ≥ v1.1.1 | ✅ This release |
+| `rde_carservice` ≥ v1.1.0 | Required for the carservice side of the events |
+| Both resources in `server.cfg` | Order between them doesn't matter — events fire only when both are running |
+| No config changes needed | Integration is automatic, zero config |
+
 ---
 
 ## 🔧 Developer API
 
-### Server Events
+### Server Events (listen from other resources)
+
+```lua
+-- fired by rde_carservice BEFORE delivery when vehicle is parked in world
+-- rde_parking clears DB + parkIndex + notifies client cache
+-- entity stays alive and is despawned naturally by the proximity system
+AddEventHandler('rde_carservice:prepareDeliveryOfParked', function(source, plate) ... end)
+
+-- fired by rde_carservice after successful delivery (garage → world)
+AddEventHandler('rde_carservice:vehicleDelivered', function(source, plate) ... end)
+
+-- fired by rde_carservice after successful pickup (world → garage)
+AddEventHandler('rde_carservice:vehiclePickedUp', function(source, plate) ... end)
+```
+
+### Server Functions (call from other resources)
 
 ```lua
 -- Force a full reload of the parking index + an immediate proximity sweep
@@ -283,21 +373,25 @@ RunProximitySweep()
 PublishParkingState()
 ```
 
-### GlobalState Reads (any resource)
+### GlobalState Reads (any resource, any side)
 
 ```lua
 local active  = GlobalState.rde_parking_active         -- { [vehicleId] = { plate, coords, locked } }
-local spawned = GlobalState.rde_parking_spawned_count  -- number, currently spawned (nearby) vehicles
+local spawned = GlobalState.rde_parking_spawned_count  -- number: currently spawned (nearby) vehicles
 ```
 
 ### Client Events
 
 ```lua
--- Fired by the server after a vehicle is spawned (broadcast to ALL clients, not just one)
+-- Fired by the server after a vehicle spawns (broadcast to ALL clients, not just one)
 RegisterNetEvent('rde_parking:applyVehicleProps', function(netId, props) ... end)
 
--- Fired after a successful unpark
+-- Fired after a successful manual unpark
 RegisterNetEvent('rde_parking:vehicleUnparked', function(plate) ... end)
+
+-- Fired by the server when carservice clears a vehicle's parked state
+-- Clears parkedCache[plate] so the player can park the delivered vehicle again
+RegisterNetEvent('rde_parking:clearParkedCache', function(plate) ... end)
 ```
 
 ---
@@ -307,17 +401,22 @@ RegisterNetEvent('rde_parking:vehicleUnparked', function(plate) ... end)
 The v1.1.0 RDE OX Standards audit caught and fixed two production-relevant bugs from the original release:
 
 **1. Missing ownership check on lock sync.**
-Previously, any client could call the lock-sync event with an arbitrary plate/netId and lock or unlock any vehicle on the server — the server trusted the client's input blindly. Now every lock/unlock request is verified server-side against `vehicles.owner` before anything happens, with a cooldown on top.
+Previously, any client could call the lock-sync event with an arbitrary plate/netId and lock or unlock any vehicle on the server. Now every lock/unlock request is verified server-side against `vehicles.owner` before anything happens, with a cooldown on top.
 
 **2. Vehicle props only broadcast to one client.**
-Mods and paint were only sent to whoever's client triggered the spawn — other nearby players saw the vehicle with no tuning applied. Props are now broadcast to all connected clients and written to the entity statebag, so anyone streaming the vehicle in later — including late joiners — receives the correct appearance automatically.
+Mods and paint were only sent to whoever's client triggered the spawn. Props are now broadcast to all connected clients and written to the entity statebag, so anyone streaming the vehicle in later receives the correct appearance automatically.
+
+v1.1.1 adds:
+
+**3. `setStored` despawn bug.**
+`oxVeh:setStored('parked', true)` with `despawn=true` could silently delete the parked entity if ox_core happened to track it. Replaced with a direct `MySQL.update` that writes `stored = 'rde_parking'` with no entity side effects.
 
 **Baseline security model:**
 
-- Every park, lock, and unlock action is verified server-side against the `vehicles` table — never trusted from the client
+- Every park, lock, and unlock action is verified server-side against the `vehicles` table
 - Per-player parking lock prevents concurrent park-spam from a single source
 - Lock/unlock cooldown enforced on both client and server
-- Single statebag sync path per state change — no parallel `TriggerClientEvent` for the same data, eliminating an entire class of desync bugs
+- Single statebag sync path per state change — no parallel `TriggerClientEvent` for the same data
 
 ---
 
@@ -353,7 +452,7 @@ CREATE TABLE rde_parked_vehicles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-> Schema is unchanged from v1.0.0 — no migration step required when upgrading.
+> Schema is **unchanged** from v1.0.0 — no migration step required when upgrading.
 
 ---
 
@@ -379,25 +478,41 @@ The lightweight in-memory index that drives the sweep holds only plate/coordinat
 Run `/parkingreload` in console. If they still don't show up, confirm `oxmysql` is fully started before `rde_parking` — check the ensure order in `server.cfg`.
 
 **Vehicle mods/paint not showing for other players?**
-This was the v1.1.0 audit fix — confirm you're actually on v1.1.0 and not an older build. Props now broadcast to all clients and sync via the `rde_parking_props` statebag.
+Confirm you're on v1.1.0+. Props now broadcast to all clients and sync via the `rde_parking_props` statebag.
 
 **Lock/unlock does nothing?**
-Check the cooldown — `Config.LockCooldown` is enforced on both client and server. Also confirm the vehicle is actually owned by your character; ownership is verified server-side.
+Check the cooldown — `Config.LockCooldown` is enforced on both client and server. Also confirm the vehicle is owned by your character; ownership is verified server-side.
 
 **"No permission" on admin commands?**
-Admin commands use `lib.addCommand` with `restricted = 'group.admin'` — verify your ox_core group via your permissions setup, not `Config.AdminGroups` (this resource doesn't use that pattern for its own commands).
+Admin commands use `lib.addCommand` with `restricted = 'group.admin'` — verify your ox_core group via your permissions setup.
 
-**Vehicle parks but disappears entirely instead of staying visible?**
-Check `Config.SpawnDistance` — the vehicle you just parked is adopted directly into the spawned cache using its live netId, so it should stay visible to you immediately. If it vanishes, confirm no other resource is deleting the entity on the same frame.
+**After carservice delivery, can't park the delivered vehicle?**
+Ensure both `rde_parking` ≥ v1.1.1 and `rde_carservice` ≥ v1.1.0 are installed. The cross-event integration (`rde_parking:clearParkedCache`) must fire to reset the client cache.
+
+**Parked vehicle disappears when calling carservice delivery?**
+Same as above — this was the duplicate-entity bug fixed in v1.1.1 via the `stored = 'rde_parking'` semantic + carservice exclusion query.
 
 **Nostr logger not connecting?**
-`[RDE | PARKING] Resource "rde_nostr_log" not found` in console means `rde_nostr_log` isn't installed — this is expected and harmless if you don't want decentralized logging. Install it and ensure it starts before `rde_parking` to enable.
+`rde_nostr_log` isn't installed — expected and harmless. Install it and ensure it before `rde_parking` to enable decentralized logging.
 
 ---
 
 ## 📝 Changelog
 
-### v1.1.0 — RDE OX Standards v2 Overhaul *(current)*
+### v1.1.1 — rde_carservice Integration + setStored Fix *(current)*
+
+- 🔗 **rde_carservice integration** — full bidirectional event sync with `rde_carservice` v1.1.0+: auto-unpark delivery, pickup cleanup, client cache sync
+- 🐛 **Fix:** `oxVeh:setStored('parked', true)` replaced with direct MySQL `UPDATE vehicles SET stored = 'rde_parking'` — eliminates silent entity despawn risk and uses a distinct, carservice-excluded stored value
+- 🐛 **Fix:** `unparkVehicle` now uses direct MySQL `stored = NULL` for consistency
+- 🐛 **Fix:** client `parkedCache[plate]` not cleared after carservice delivery → player could not re-park a delivered vehicle
+- 🐛 **Fix:** stale `rde_parked_vehicles` row after carservice pickup → proximity sweep no longer respawns already-stored vehicles
+- 🐛 **Fix:** `prepareDeliveryOfParked` handler deliberately avoids `DeleteEntity` — clears DB + parkIndex only, keeps `spawnedVehicles` entry so the existing proximity despawn system handles entity cleanup after `despawnGraceMs`. This prevents GTA entity handle recycling from invalidating the carservice delivery vehicle.
+- ✨ `ClearParkedByPlate()` server helper — used by vehicleDelivered/vehiclePickedUp for pickup-path and post-delivery cleanup
+- ✨ New server events listened: `rde_carservice:prepareDeliveryOfParked` / `rde_carservice:vehicleDelivered` / `rde_carservice:vehiclePickedUp`
+- ✨ New client event: `rde_parking:clearParkedCache` (cross-resource state reset)
+- 📦 No database schema changes — direct upgrade from v1.1.0, no migration needed
+
+### v1.1.0 — RDE OX Standards v2 Overhaul
 
 - ✨ **Proximity Loading** — vehicles spawn/despawn based on player distance instead of all spawning at boot
 - ✨ GlobalState register (`rde_parking_active`, `rde_parking_spawned_count`) for external resources
@@ -421,7 +536,7 @@ Check `Config.SpawnDistance` — the vehicle you just parked is adopted directly
 ```
 ###################################################################################
 # .:: RED DRAGON ELITE (RDE) - BLACK FLAG SOURCE LICENSE v6.66 ::.
-# PROJECT: RDE_PARKING v1.1.0 (PROXIMITY-LOADED PARKING & LOCK SYSTEM)
+# PROJECT: RDE_PARKING v1.1.1 (PROXIMITY-LOADED PARKING & LOCK SYSTEM)
 # ARCHITECT: .:: RDE ⧌ Shin [△ ᛋᛅᚱᛒᛅᚾᛏᛋ ᛒᛁᛏᛅ ▽] ::. | https://rd-elite.com
 # ORIGIN: https://github.com/RedDragonElite
 # WARNING: THIS CODE IS PROTECTED BY DIGITAL VOODOO AND PURE HATRED FOR LEAKERS
@@ -475,6 +590,8 @@ Check `Config.SpawnDistance` — the vehicle you just parked is adopted directly
 | 🌍 Website | [rd-elite.com](https://rd-elite.com) |
 | 🔵 Nostr (RDE) | RedDragonElite |
 | 🔵 Nostr (Shin) | SerpentsByte |
+| 🅿️ RDE Parking | [rde_parking](https://github.com/RedDragonElite/rde_parking) |
+| 🚘 RDE Carservice | [rde_carservice](https://github.com/RedDragonElite/rde_carservice) |
 | 🎮 RDE Props | [rde_props](https://github.com/RedDragonElite/rde_props) |
 | 🚪 RDE Doors | [rde_doors](https://github.com/RedDragonElite/rde_doors) |
 | 🚨 RDE AIPD | [rde_aipd](https://github.com/RedDragonElite/rde_aipd) |
